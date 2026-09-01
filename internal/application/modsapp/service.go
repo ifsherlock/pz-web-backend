@@ -10,9 +10,15 @@ type WorkshopFetcher interface {
 	FetchWorkshopInfo(workshopID string) (mods.ModInfo, error)
 }
 
+type CollectionFetcher interface {
+	IsCollection(workshopID string) (bool, error)
+	FetchCollectionChildren(collectionID string) ([]string, error)
+}
+
 type Service struct {
 	InstallDir string
 	Workshop   WorkshopFetcher
+	Collection CollectionFetcher
 }
 
 type LookupResult struct {
@@ -27,6 +33,30 @@ func (s Service) ListLocalMods() ([]mods.ModInfo, error) {
 		return nil, fmt.Errorf("install dir is empty")
 	}
 	return mods.ScanLocalMods(s.InstallDir)
+}
+
+// IsCollection 判断 workshopID 是否为合集。
+func (s Service) IsCollection(workshopID string) (bool, error) {
+	if s.Collection == nil {
+		return false, fmt.Errorf("collection support not configured")
+	}
+	return s.Collection.IsCollection(workshopID)
+}
+
+// FetchCollectionChildren 获取合集内全部子项 Workshop ID。
+func (s Service) FetchCollectionChildren(collectionID string) ([]string, error) {
+	if s.Collection == nil {
+		return nil, fmt.Errorf("collection support not configured")
+	}
+	return s.Collection.FetchCollectionChildren(collectionID)
+}
+
+// FetchWorkshopInfo 查询单个 workshop 物品信息。
+func (s Service) FetchWorkshopInfo(workshopID string) (mods.ModInfo, error) {
+	if s.Workshop == nil {
+		return mods.ModInfo{}, fmt.Errorf("workshop fetcher not configured")
+	}
+	return s.Workshop.FetchWorkshopInfo(workshopID)
 }
 
 func (s Service) Lookup(workshopIDs []string) ([]LookupResult, error) {

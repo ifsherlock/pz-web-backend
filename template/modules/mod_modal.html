@@ -30,6 +30,55 @@
                         <span x-show="modLoading" class="loading loading-spinner"></span>
                         <span x-show="!modLoading" x-text="i18n.mod_btn_analyze"></span>
                     </button>
+
+                    <!-- 合集展开 -->
+                    <div class="divider" x-text="i18n.mod_collection_label"></div>
+                    <div class="form-control">
+                        <input type="text" class="input input-bordered input-sm w-full font-mono"
+                            :placeholder="i18n.mod_collection_placeholder"
+                            x-model="collectionInput" />
+                    </div>
+                    <button class="btn btn-outline btn-sm w-full" @click="expandCollection()" :disabled="collectionLoading">
+                        <span x-show="collectionLoading" class="loading loading-spinner loading-sm"></span>
+                        <span x-show="!collectionLoading" x-text="i18n.mod_btn_expand"></span>
+                    </button>
+                    <template x-if="collectionItems.length > 0">
+                        <div class="border border-base-200 rounded-box p-2 max-h-48 overflow-y-auto">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="flex items-center gap-1 text-xs cursor-pointer">
+                                    <input type="checkbox" class="checkbox checkbox-xs" @change="toggleSelectAll()" x-model="collectionSelectAll" />
+                                    <span x-text="i18n.mod_collection_select_all"></span>
+                                </label>
+                                <button class="btn btn-xs btn-primary" @click="addSelectedCollectionMods()" x-text="i18n.mod_collection_add_selected"></button>
+                            </div>
+                            <template x-for="(mod, idx) in collectionItems" :key="mod.workshop_id">
+                                <label class="flex items-center gap-2 p-1 hover:bg-base-200 rounded cursor-pointer">
+                                    <input type="checkbox" class="checkbox checkbox-xs" :checked="collectionChecked[idx]" @change="collectionChecked[idx] = !collectionChecked[idx]" />
+                                    <div class="truncate flex-1">
+                                        <div class="text-xs truncate" x-text="mod.name"></div>
+                                        <div class="text-[10px] text-base-content/60 font-mono" x-text="'W:' + mod.workshop_id + ' M:' + mod.mod_id"></div>
+                                    </div>
+                                </label>
+                            </template>
+                        </div>
+                    </template>
+                    <div x-show="collectionExpandMsg" class="text-xs text-warning px-1" x-text="collectionExpandMsg"></div>
+
+                    <!-- 面板设置(API Key / 内存) -->
+                    <div class="divider" x-text="i18n.mod_settings_title"></div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text text-xs" x-text="i18n.mod_settings_key_label"></span></label>
+                        <input type="password" class="input input-bordered input-sm w-full font-mono"
+                            :placeholder="i18n.mod_settings_key_placeholder"
+                            x-model="settingsKey" />
+                        <span class="text-[10px] text-base-content/50" x-show="settingsKeyConfigured" x-text="'(已配置)'"></span>
+                    </div>
+                    <div class="form-control mt-1">
+                        <label class="label"><span class="label-text text-xs" x-text="i18n.mod_settings_mem_label"></span></label>
+                        <input type="text" class="input input-bordered input-sm w-full font-mono"
+                            placeholder="3g" x-model="settingsMemory" />
+                    </div>
+                    <button class="btn btn-ghost btn-sm w-full mt-1" @click="saveSettings()" x-text="i18n.mod_settings_save"></button>
                     
                     <div class="divider" x-text="i18n.mod_divider_or"></div>
                     

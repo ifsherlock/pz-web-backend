@@ -8,6 +8,7 @@ func (a App) RegisterRoutes(r *gin.Engine) {
 	a.registerActionRoutes(r)
 	a.registerI18nRoutes(r)
 	a.registerModsRoutes(r)
+	a.registerSettingsRoutes(r)
 	a.registerSystemRoutes(r)
 	a.registerServiceRoutes(r)
 	a.registerLogRoutes(r)

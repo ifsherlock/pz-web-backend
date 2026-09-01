@@ -40,6 +40,8 @@ type App struct {
 	ModsApp   modsapp.Service
 	UpdateApp updateapp.Service
 	LogTailer logtail.Tailer
+
+	Settings *settingsStore
 }
 
 func NewApp(baseDataDir string, baseGameDir string, serverName string, logPath string, build BuildInfo, devMode bool) App {
@@ -69,7 +71,13 @@ func NewApp(baseDataDir string, baseGameDir string, serverName string, logPath s
 	}
 
 	installDir := pzpaths.DefaultInstallDir(devMode)
-	workshopClient := mustDefaultWorkshopClient(devMode)
+
+	// 加载面板持久化设置(Steam API Key / 内存上限等)。
+	settingsStore := newSettingsStore(osfs, installDir)
+
+	// Steam API Key 用于解析创意工坊合集(GetCollectionDetails)，
+	// 普通单个 Mod 解析不需要。
+	workshopClient := mustDefaultWorkshopClient(devMode, settingsStore.Load().SteamAPIKey)
 
 	updateChecker := sysupdate.Service{
 		HTTPClient:     &http.Client{Timeout: 10 * time.Second},
@@ -85,6 +93,7 @@ func NewApp(baseDataDir string, baseGameDir string, serverName string, logPath s
 		LogPath:     logPath,
 		I18n:        loader,
 		Config:      configSvc,
+		Settings:    settingsStore,
 
 		ConfigApp: configapp.Service{
 			BaseDataDir: baseDataDir,
@@ -102,15 +111,16 @@ func NewApp(baseDataDir string, baseGameDir string, serverName string, logPath s
 		ModsApp: modsapp.Service{
 			InstallDir: installDir,
 			Workshop:   workshopClient,
+			Collection: workshopClient,
 		},
 		UpdateApp: updateSvc,
 		LogTailer: tailer,
 	}
 }
 
-func mustDefaultWorkshopClient(devMode bool) modsapp.WorkshopFetcher {
+func mustDefaultWorkshopClient(devMode bool, apiKey string) *mods.WorkshopClient {
 	path := pzpaths.WorkshopCachePath(devMode)
-	client, err := mods.NewFileCachedWorkshopClient(path, &http.Client{Timeout: 10 * time.Second})
+	client, err := mods.NewFileCachedWorkshopClientWithKey(path, &http.Client{Timeout: 10 * time.Second}, apiKey)
 	if err != nil {
 		panic(err)
 	}

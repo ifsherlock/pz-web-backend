@@ -126,6 +126,17 @@ func (s Service) ParseSandboxLua(path string, lang string) ([]Item, error) {
 			}
 
 			label, tooltip := i18n.TranslateKey(dict, rawKey, "Sandbox_")
+			// 游戏翻译文件未覆盖的沙盒键，回退使用内置中文映射，
+			// 与 servertest.ini 一致：前端 legend 显示英文键名，下面一行显示中文。
+			if label == "" || label == rawKey {
+				if cn, ok := sandboxCN[fullKey]; ok {
+					label = cn
+				} else if cn, ok := sandboxCN[rawKey]; ok {
+					label = cn
+				} else {
+					label = rawKey
+				}
+			}
 			options := sandboxOptions(dict, rawKey)
 
 			sectionKey := inferSandboxSectionKey(fullKey)

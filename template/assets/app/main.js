@@ -16,6 +16,17 @@ function app() {
                 modLoading: false,
                 availableMods: [], // 本地库
                 activeMods: [],    // 当前启用列表
+                // 合集展开
+                collectionInput: '',
+                collectionLoading: false,
+                collectionItems: [],
+                collectionChecked: [],
+                collectionSelectAll: false,
+                collectionExpandMsg: '',
+                // 面板设置
+                settingsKey: '',
+                settingsKeyConfigured: false,
+                settingsMemory: '',
                 logConnected: false,
 
 
@@ -97,6 +108,8 @@ function app() {
                     this.modLoading = true;
                     const availableModsResp = await fetch(`/api/mods`);
                     this.availableMods = await availableModsResp.json()
+                    // 加载面板设置(API Key / 内存)
+                    this.loadSettings();
                     // 从 serverConfig 解析当前配置
                     const modsItem = this.serverConfig.find(i => i.key === 'Mods');
                     const wsItem = this.serverConfig.find(i => i.key === 'WorkshopItems');
@@ -255,6 +268,84 @@ function app() {
 
                     document.getElementById('mod_modal').close();
                     this.showToast(this.i18n.msg_mod_list_updated, 'success');
+                },
+
+                // 展开合集：输入合集 ID，显示全部子模组供勾选
+                async expandCollection() {
+                    const id = (this.collectionInput || '').trim();
+                    if (!id) return;
+                    this.collectionLoading = true;
+                    this.collectionExpandMsg = '';
+                    this.collectionItems = [];
+                    this.collectionChecked = [];
+                    this.collectionSelectAll = false;
+                    try {
+                        const res = await fetch(`/api/mods/collection?id=${encodeURIComponent(id)}`);
+                        const data = await res.json();
+                        if (!res.ok) {
+                            const msg = data.error || '';
+                            if (msg.includes('api key')) {
+                                this.collectionExpandMsg = this.i18n.mod_collection_not_key || msg;
+                            } else {
+                                this.collectionExpandMsg = (this.i18n.mod_collection_error || 'Collection failed') + ': ' + msg;
+                            }
+                            return;
+                        }
+                        this.collectionItems = data.children || [];
+                        this.collectionChecked = this.collectionItems.map(() => false);
+                    } catch (e) {
+                        this.collectionExpandMsg = (this.i18n.mod_collection_error || 'Collection failed') + ': ' + e;
+                    } finally {
+                        this.collectionLoading = false;
+                    }
+                },
+
+                // 全选/取消全选
+                toggleSelectAll() {
+                    const allChecked = !this.collectionSelectAll;
+                    this.collectionChecked = this.collectionChecked.map(() => allChecked);
+                },
+
+                // 添加勾选的合集子模组到已启用列表
+                addSelectedCollectionMods() {
+                    this.collectionItems.forEach((mod, idx) => {
+                        if (this.collectionChecked[idx]) {
+                            this.addModItem(mod);
+                        }
+                    });
+                    this.collectionExpandMsg = this.i18n.mod_collection_add_selected;
+                },
+
+                // 加载面板设置(API Key / 内存)
+                async loadSettings() {
+                    try {
+                        const res = await fetch(`/api/settings`);
+                        const data = await res.json();
+                        this.settingsKeyConfigured = !!data.steam_api_key_configured;
+                        this.settingsMemory = data.memory_limit || '';
+                    } catch (e) {
+                        console.error('load settings failed', e);
+                    }
+                },
+
+                // 保存面板设置
+                async saveSettings() {
+                    try {
+                        const res = await fetch(`/api/settings`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                steam_api_key: this.settingsKey || '',
+                                memory_limit: this.settingsMemory || ''
+                            })
+                        });
+                        if (!res.ok) throw new Error('save failed');
+                        this.settingsKey = '';
+                        this.settingsKeyConfigured = true;
+                        this.showToast(this.i18n.mod_settings_saved || 'Settings saved', 'success');
+                    } catch (e) {
+                        this.showToast(e.message, 'error');
+                    }
                 },
 
                 // 保存配置
