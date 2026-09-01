@@ -28,6 +28,44 @@
         .log-viewer::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         /* 防止手机端点击高亮 */
         * { -webkit-tap-highlight-color: transparent; }
+
+        /* ===== 苹果式柔和设计(纯CSS，不依赖Tailwind运行时) ===== */
+
+        /* 顶部导航栏: 半透明毛玻璃 + 细边框圆角 */
+        .navbar {
+            background: color-mix(in srgb, var(--fallback-b1, #ffffff) 75%, transparent) !important;
+            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--fallback-bc, rgba(128,128,128,0.25)) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.10) !important;
+        }
+
+        /* 主内容卡片: 半透明 + 大圆角 + 柔和阴影 */
+        .main-card {
+            background: color-mix(in srgb, var(--fallback-b1, #ffffff) 82%, transparent) !important;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--fallback-bc, rgba(128,128,128,0.22)) !important;
+            border-radius: 20px !important;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+        }
+
+        /* 语言选择框: 无边框、宽度足够显示"简体中文" */
+        .lang-select {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            width: 7.5rem !important; /* 120px, 够放简体中文 */
+            text-align: left !important;
+            padding: 0 0.5rem !important;
+        }
+        .lang-select:hover {
+            background: color-mix(in srgb, var(--fallback-bc, #888) 12%, transparent) !important;
+        }
+        .lang-select:focus {
+            outline: none !important;
+        }
     </style>
 </head>
 <body class="bg-base-300 min-h-screen pb-20 md:pb-4 flex flex-col gap-4" x-data="app()" x-init="initI18n()">
