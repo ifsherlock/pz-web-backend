@@ -1,6 +1,7 @@
 {{define "partials/navbar"}}
     <!-- 顶部导航 (Desktop & Mobile) -->
-    <div class="navbar bg-base-100/70 backdrop-blur-md shadow-sm z-20 sticky top-0 md:rounded-2xl md:mx-auto md:container md:mt-2 md:border md:border-base-200/50 px-4">
+    <!-- 背景/边框/阴影由 index.html 的 .navbar 规则统一控制(主题自适应)，此处不叠加冲突的 Tailwind 类 -->
+    <div class="navbar z-20 sticky top-0 md:mx-auto md:container md:mt-2 px-4">
         <!-- 左侧：图标 + 标题(恢复放左侧) -->
         <div class="flex-1 flex items-center gap-2">
             <a class="btn btn-ghost gap-2 px-2" :title="i18n.app_title || 'PZ Manager'">
