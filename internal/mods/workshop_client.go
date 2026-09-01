@@ -66,15 +66,16 @@ type steamResponse struct {
 }
 
 // collectionResponse GetCollectionDetails 的响应结构。
+// 注意：Steam 返回的键是 collectiondetails(复数)，不是 collections。
 type collectionResponse struct {
 	Response struct {
 		ResultCount int `json:"resultcount"`
 		Collections []struct {
-			CollectionID string `json:"collectionid"`
+			CollectionID string `json:"publishedfileid"`
 			Children     []struct {
 				PublishedFileID string `json:"publishedfileid"`
 			} `json:"children"`
-		} `json:"collections"`
+		} `json:"collectiondetails"`
 	} `json:"response"`
 }
 
@@ -100,7 +101,9 @@ func (c *WorkshopClient) FetchCollectionChildren(collectionID string) ([]string,
 	apiURL := "https://api.steampowered.com/ISteamRemoteStorage/GetCollectionDetails/v1/"
 	form := url.Values{}
 	form.Set("collectioncount", "1")
-	form.Set("collectionids[0]", collectionID)
+	// 注意：Steam 的 GetCollectionDetails 接口实际要求参数名为 publishedfileids[0]，
+	// 用 collectionids[0] 会报 "Required parameter 'publishedfileids[0]' is missing"。
+	form.Set("publishedfileids[0]", collectionID)
 	form.Set("key", c.apiKey)
 
 	resp, err := c.httpClient.Post(apiURL, "application/x-www-form-urlencoded", strings.NewReader(form.Encode()))
