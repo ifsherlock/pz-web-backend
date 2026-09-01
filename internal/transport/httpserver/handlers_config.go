@@ -24,7 +24,7 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 	}
 	// 追加内存设置虚拟项：不写入 servertest.ini，仅面板展示，
 	// 保存时由 handleSaveConfig 抽离并写入 panel_settings.json。
-	// 归属到独立的服务端配置分类(server_config)。
+	// Section 直接用中文，确保前端分组标题显示"服务端配置"。
 	if a.Settings != nil {
 		settings := a.Settings.Load()
 		items = append(items, config.Item{
@@ -32,7 +32,7 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 			Value:   settings.MemoryLimit,
 			Label:   "JVM 内存上限 (如 3g / 4g)",
 			Tooltip: "游戏服务端 JVM 堆上限，重启游戏后生效；Build 42 建议 ≥ 2g",
-			Section: "server_config",
+			Section: "服务端配置",
 		})
 	}
 	filename := fmt.Sprintf("%s.ini", a.ConfigApp.ServerName)
