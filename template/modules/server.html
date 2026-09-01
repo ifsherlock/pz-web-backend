@@ -36,10 +36,10 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             <template x-for="item in items.filter(i => i.key !== 'Mods' && i.key !== 'WorkshopItems')" :key="item.key">
                                 <fieldset class="fieldset bg-base-200/50 border-base-200 border rounded-lg p-3">
-                                    <legend class="fieldset-legend text-xs font-bold text-primary px-2 uppercase tracking-wide" x-text="item.key || item.label"></legend>
+                                    <legend class="fieldset-legend text-xs font-bold text-primary px-2 tracking-wide" x-text="item.key"></legend>
                                     
                                     <label class="label py-0 pb-1">
-                                        <span class="label-text-alt font-mono text-[10px] opacity-50 select-text" x-text="item.label"></span>
+                                        <span class="label-text text-sm text-base-content select-text" x-text="item.label"></span>
                                     </label>
 
                                     <template x-if="item.options">

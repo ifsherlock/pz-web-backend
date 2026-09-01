@@ -49,11 +49,11 @@ func (s Service) ParseServerINI(path string, lang string) ([]Item, error) {
 		val := strings.TrimSpace(parts[1])
 
 		label, tooltip := i18n.TranslateKey(dict, key, "UI_ServerOption_")
-		// 游戏翻译文件未覆盖的键，回退使用内置中文映射，
-		// 保证每个配置项都能看到中文示意（显示为“键名 + 中文”）。
+		// 游戏翻译文件未覆盖的键，回退使用内置中文映射。
+		// 前端 legend 已经显示英文键名，这里只放中文翻译。
 		if label == "" || label == key {
 			if cn, ok := serverOptionCN[key]; ok {
-				label = key + " / " + cn
+				label = cn
 			} else {
 				label = key
 			}
