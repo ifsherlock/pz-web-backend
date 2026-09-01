@@ -48,9 +48,15 @@ func (s Service) ParseServerINI(path string, lang string) ([]Item, error) {
 		key := strings.TrimSpace(parts[0])
 		val := strings.TrimSpace(parts[1])
 
-		_, tooltip := i18n.TranslateKey(dict, key, "UI_ServerOption_")
-		if tooltip == "" {
-			tooltip = key
+		label, tooltip := i18n.TranslateKey(dict, key, "UI_ServerOption_")
+		// 游戏翻译文件未覆盖的键，回退使用内置中文映射，
+		// 保证每个配置项都能看到中文示意（显示为“键名 + 中文”）。
+		if label == "" || label == key {
+			if cn, ok := serverOptionCN[key]; ok {
+				label = key + " / " + cn
+			} else {
+				label = key
+			}
 		}
 
 		sectionKey := inferServerSectionKey(key)
@@ -59,7 +65,8 @@ func (s Service) ParseServerINI(path string, lang string) ([]Item, error) {
 		items = append(items, Item{
 			Key:     key,
 			Value:   val,
-			Label:   tooltip,
+			Label:   label,
+			Tooltip: tooltip,
 			Section: section,
 		})
 	}

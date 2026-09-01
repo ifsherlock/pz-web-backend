@@ -1,4 +1,5 @@
 pz-web-backend
+pz-web-backend-linux
 *.bak
 *.new
 .DS_Store
