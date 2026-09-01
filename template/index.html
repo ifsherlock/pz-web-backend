@@ -33,21 +33,17 @@
         /* 说明：颜色全部使用 DaisyUI 主题变量(--b1/--bc等)，亮/暗主题自适应；
                 用 color-mix 叠加透明度。勿用写死的 --fallback-*。 */
 
-        /* 顶部导航栏: 半透明毛玻璃 + 细边框圆角 */
+        /* 顶部导航栏: 与主内容区同色实底背景，风格统一 */
         .navbar {
-            background: color-mix(in srgb, var(--b1, #ffffff) 75%, transparent) !important;
-            -webkit-backdrop-filter: blur(12px);
-            backdrop-filter: blur(12px);
-            border: 1px solid color-mix(in srgb, var(--bc, #888888) 15%, transparent) !important;
+            background: var(--b1, #ffffff) !important;
+            border: 1px solid color-mix(in srgb, var(--bc, #888888) 12%, transparent) !important;
             border-radius: 16px !important;
             box-shadow: 0 4px 24px color-mix(in srgb, var(--bc, #000000) 10%, transparent) !important;
         }
 
-        /* 主内容卡片: 半透明 + 大圆角 + 柔和阴影 */
+        /* 主内容卡片: 与顶部横条同色实底，大圆角 + 柔和阴影 */
         .main-card {
-            background: color-mix(in srgb, var(--b1, #ffffff) 82%, transparent) !important;
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
+            background: var(--b1, #ffffff) !important;
             border: 1px solid color-mix(in srgb, var(--bc, #888888) 12%, transparent) !important;
             border-radius: 20px !important;
             box-shadow: 0 8px 30px color-mix(in srgb, var(--bc, #000000) 12%, transparent) !important;
