@@ -10,14 +10,28 @@
             </a>
         </div>
 
-        <!-- 中间：仪表盘标题 -->
-        <div class="flex-1 flex justify-center">
-            <a class="btn btn-ghost text-lg font-bold gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-primary hidden md:block">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                </svg>
-                <span x-text="i18n.app_title || 'PZ Manager'"></span>
-            </a>
+        <!-- 中间：资源仪表盘 -->
+        <div class="flex-1 flex justify-center items-center gap-3">
+            <!-- CPU -->
+            <div class="flex items-center gap-1.5">
+                <span class="badge badge-ghost badge-sm gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" /></svg>
+                    <span class="text-xs font-mono" x-text="(stats.cpu_percent ?? 0).toFixed(0) + '%'"></span>
+                </span>
+                <div class="w-14 h-1.5 rounded-full bg-base-200 overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-500" :style="'width:' + Math.min(stats.cpu_percent ?? 0, 100) + '%'" :class="(stats.cpu_percent ?? 0) > 85 ? 'bg-error' : 'bg-primary'"></div>
+                </div>
+            </div>
+            <!-- 内存 -->
+            <div class="flex items-center gap-1.5">
+                <span class="badge badge-ghost badge-sm gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25" /></svg>
+                    <span class="text-xs font-mono" x-text="formatMem(stats.mem_used_mb) + ' / ' + formatMem(stats.mem_total_mb)"></span>
+                </span>
+                <div class="w-14 h-1.5 rounded-full bg-base-200 overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-500" :style="'width:' + Math.min(stats.mem_percent ?? 0, 100) + '%'" :class="(stats.mem_percent ?? 0) > 85 ? 'bg-error' : 'bg-accent'"></div>
+                </div>
+            </div>
         </div>
 
         <!-- 右侧：状态 + 主题 + 语言 -->

@@ -80,22 +80,6 @@
                         </div>
                     </template>
                     <div x-show="collectionExpandMsg" class="text-xs text-warning px-1" x-text="collectionExpandMsg"></div>
-
-                    <!-- 面板设置(API Key / 内存) -->
-                    <div class="divider" x-text="i18n.mod_settings_title"></div>
-                    <div class="form-control">
-                        <label class="label"><span class="label-text text-xs" x-text="i18n.mod_settings_key_label"></span></label>
-                        <input type="password" class="input input-bordered input-sm w-full font-mono"
-                            :placeholder="i18n.mod_settings_key_placeholder"
-                            x-model="settingsKey" />
-                        <span class="text-[10px] text-base-content/50" x-show="settingsKeyConfigured" x-text="'(已配置)'"></span>
-                    </div>
-                    <div class="form-control mt-1">
-                        <label class="label"><span class="label-text text-xs" x-text="i18n.mod_settings_mem_label"></span></label>
-                        <input type="text" class="input input-bordered input-sm w-full font-mono"
-                            placeholder="3g" x-model="settingsMemory" />
-                    </div>
-                    <button class="btn btn-ghost btn-sm w-full mt-1" @click="saveSettings()" x-text="i18n.mod_settings_save"></button>
                     
                     <div class="divider" x-text="i18n.mod_divider_or"></div>
                     

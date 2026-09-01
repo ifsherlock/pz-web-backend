@@ -25,10 +25,8 @@ function app() {
                 collectionSelectAll: false,
                 collectionExpandMsg: '',
                 addedCollections: [], // 已添加的合集列表 {id,name}
-                // 面板设置
-                settingsKey: '',
-                settingsKeyConfigured: false,
-                settingsMemory: '',
+                // 资源仪表盘
+                stats: { cpu_percent: 0, mem_used_mb: 0, mem_total_mb: 0, mem_percent: 0 },
                 logConnected: false,
 
 
@@ -36,6 +34,7 @@ function app() {
                     // 应用日夜主题
                     document.documentElement.setAttribute('data-theme', this.theme);
                     this.refreshAll();
+                    this.startStatsPolling();
                     // 监听 Tab 切换，触发sse
                     this.$watch('currentTab', (val) => {
                         if (val === 'monitor') {
@@ -44,6 +43,25 @@ function app() {
                             this.stopLogStream(); // 离开页面时断开连接，节省资源
                         }
                     });
+                },
+
+                // 轮询服务器资源(CPU/内存)
+                startStatsPolling() {
+                    const poll = () => {
+                        fetch(`/api/system/stats`)
+                            .then(res => res.json())
+                            .then(d => { this.stats = d || this.stats; })
+                            .catch(() => {});
+                    };
+                    poll();
+                    setInterval(poll, 3000);
+                },
+
+                // 格式化内存大小显示
+                formatMem(mb) {
+                    const n = Number(mb) || 0;
+                    if (n >= 1024) return (n / 1024).toFixed(1) + 'G';
+                    return n + 'M';
                 },
 
                 // 切换日夜模式
@@ -134,8 +152,6 @@ function app() {
                     this.modLoading = true;
                     const availableModsResp = await fetch(`/api/mods`);
                     this.availableMods = await availableModsResp.json()
-                    // 加载面板设置(API Key / 内存)
-                    this.loadSettings();
                     // 从 serverConfig 解析当前配置
                     const modsItem = this.serverConfig.find(i => i.key === 'Mods');
                     const wsItem = this.serverConfig.find(i => i.key === 'WorkshopItems');
@@ -359,38 +375,6 @@ function app() {
                         }
                     });
                     this.collectionExpandMsg = this.i18n.mod_collection_add_selected;
-                },
-
-                // 加载面板设置(API Key / 内存)
-                async loadSettings() {
-                    try {
-                        const res = await fetch(`/api/settings`);
-                        const data = await res.json();
-                        this.settingsKeyConfigured = !!data.steam_api_key_configured;
-                        this.settingsMemory = data.memory_limit || '';
-                    } catch (e) {
-                        console.error('load settings failed', e);
-                    }
-                },
-
-                // 保存面板设置
-                async saveSettings() {
-                    try {
-                        const res = await fetch(`/api/settings`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                steam_api_key: this.settingsKey || '',
-                                memory_limit: this.settingsMemory || ''
-                            })
-                        });
-                        if (!res.ok) throw new Error('save failed');
-                        this.settingsKey = '';
-                        this.settingsKeyConfigured = true;
-                        this.showToast(this.i18n.mod_settings_saved || 'Settings saved', 'success');
-                    } catch (e) {
-                        this.showToast(e.message, 'error');
-                    }
                 },
 
                 // 保存配置
