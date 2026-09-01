@@ -12,6 +12,8 @@ function app() {
                 sandboxSections: {},
                 logs: '...',
                 status: { pid: 0, uptime: '0s' },
+                stats: { cpu_percent: 0, mem_used_mb: 0, mem_total_mb: 0, mem_percent: 0, uptime_sec: 0 },
+                statsTimer: null,
                 toast: { show: false, message: '', type: 'success' },
                 modInput: '',
                 modLoading: false,
@@ -25,8 +27,11 @@ function app() {
                 collectionSelectAll: false,
                 collectionExpandMsg: '',
                 addedCollections: [], // 已添加的合集列表 {id,name}
-                // 资源仪表盘
-                stats: { cpu_percent: 0, mem_used_mb: 0, mem_total_mb: 0, mem_percent: 0 },
+                // 面板设置
+                settingsKey: '',
+                settingsKeyConfigured: false,
+                settingsKeyMasked: '',
+                settingsMemory: '',
                 logConnected: false,
 
 
@@ -34,7 +39,11 @@ function app() {
                     // 应用日夜主题
                     document.documentElement.setAttribute('data-theme', this.theme);
                     this.refreshAll();
-                    this.startStatsPolling();
+                    // 启动仪表盘 CPU/内存轮询(每3秒)
+                    this.fetchStats();
+                    this.statsTimer = setInterval(() => {
+                        this.fetchStats();
+                    }, 3000);
                     // 监听 Tab 切换，触发sse
                     this.$watch('currentTab', (val) => {
                         if (val === 'monitor') {
@@ -45,30 +54,35 @@ function app() {
                     });
                 },
 
-                // 轮询服务器资源(CPU/内存)
-                startStatsPolling() {
-                    const poll = () => {
-                        fetch(`/api/system/stats`)
-                            .then(res => res.json())
-                            .then(d => { this.stats = d || this.stats; })
-                            .catch(() => {});
-                    };
-                    poll();
-                    setInterval(poll, 3000);
-                },
-
-                // 格式化内存大小显示
-                formatMem(mb) {
-                    const n = Number(mb) || 0;
-                    if (n >= 1024) return (n / 1024).toFixed(1) + 'G';
-                    return n + 'M';
-                },
-
                 // 切换日夜模式
                 toggleTheme() {
                     this.theme = this.theme === 'dark' ? 'light' : 'dark';
                     localStorage.setItem('pz_theme', this.theme);
                     document.documentElement.setAttribute('data-theme', this.theme);
+                },
+
+                // 拉取容器 CPU / 内存统计
+                async fetchStats() {
+                    try {
+                        const res = await fetch('/api/system/stats');
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        this.stats = data;
+                    } catch (e) {
+                        console.error('fetch stats failed', e);
+                    }
+                },
+
+                // 运行时长格式化
+                formatUptime(sec) {
+                    if (!sec) return '-';
+                    const d = Math.floor(sec / 86400);
+                    const h = Math.floor((sec % 86400) / 3600);
+                    const m = Math.floor((sec % 3600) / 60);
+                    if (d > 0) return `${d}天 ${h}时`;
+                    if (h > 0) return `${h}时 ${m}分`;
+                    if (m > 0) return `${m}分 ${sec % 60}秒`;
+                    return `${sec}秒`;
                 },
 
                 // 从文本中提取 Workshop ID：支持纯数字 ID 和 Steam 链接。
@@ -152,6 +166,8 @@ function app() {
                     this.modLoading = true;
                     const availableModsResp = await fetch(`/api/mods`);
                     this.availableMods = await availableModsResp.json()
+                    // 加载面板设置(API Key / 内存)
+                    this.loadSettings();
                     // 从 serverConfig 解析当前配置
                     const modsItem = this.serverConfig.find(i => i.key === 'Mods');
                     const wsItem = this.serverConfig.find(i => i.key === 'WorkshopItems');
@@ -375,6 +391,43 @@ function app() {
                         }
                     });
                     this.collectionExpandMsg = this.i18n.mod_collection_add_selected;
+                },
+
+                // 加载面板设置(API Key / 内存)
+                async loadSettings() {
+                    try {
+                        const res = await fetch(`/api/settings`);
+                        const data = await res.json();
+                        this.settingsKeyConfigured = !!data.steam_api_key_configured;
+                        // 显示掩码 Key 让用户确认已存放(不显示完整 Key)
+                        this.settingsKeyMasked = data.steam_api_key_masked || '';
+                        this.settingsMemory = data.memory_limit || '';
+                    } catch (e) {
+                        console.error('load settings failed', e);
+                    }
+                },
+
+                // 保存面板设置
+                async saveSettings() {
+                    try {
+                        const res = await fetch(`/api/settings`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                steam_api_key: this.settingsKey,
+                                memory_limit: this.settingsMemory
+                            })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'save failed');
+                        // 成功: 记录掩码 Key, 清空输入框但保留"已配置"状态
+                        this.settingsKeyConfigured = true;
+                        this.settingsKeyMasked = data.steam_api_key_masked || '';
+                        this.settingsKey = '';
+                        this.showToast(this.i18n.mod_settings_saved || 'Settings saved', 'success');
+                    } catch (e) {
+                        this.showToast(e.message, 'error');
+                    }
                 },
 
                 // 保存配置

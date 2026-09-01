@@ -21,13 +21,6 @@ func (a App) handleCheckUpdate(c *gin.Context) {
 	})
 }
 
-// handleSystemStats 返回服务器资源占用(CPU / 内存)。
-// 供顶部导航栏的实时仪表盘轮询使用。
-func (a App) handleSystemStats(c *gin.Context) {
-	stats := collectSystemStats()
-	c.JSON(http.StatusOK, stats)
-}
-
 func (a App) handlePerformUpdate(c *gin.Context) {
 	var req struct {
 		Url string `json:"url"`

@@ -80,6 +80,18 @@
                         </div>
                     </template>
                     <div x-show="collectionExpandMsg" class="text-xs text-warning px-1" x-text="collectionExpandMsg"></div>
+
+                    <!-- 面板设置(仅 Steam API Key，用于合集解析) -->
+                    <div class="divider" x-text="i18n.mod_settings_title"></div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text text-xs" x-text="i18n.mod_settings_key_label"></span></label>
+                        <input type="password" class="input input-bordered input-sm w-full font-mono"
+                            :placeholder="i18n.mod_settings_key_placeholder"
+                            x-model="settingsKey" />
+                        <span class="text-[10px] text-success mt-1" x-show="settingsKeyMasked" x-text="'已保存: ' + settingsKeyMasked"></span>
+                        <span class="text-[10px] text-base-content/50" x-show="!settingsKeyMasked && settingsKeyConfigured" x-text="'(已配置)'"></span>
+                    </div>
+                    <button class="btn btn-ghost btn-sm w-full mt-1" @click="saveSettings()" x-text="i18n.mod_settings_save"></button>
                     
                     <div class="divider" x-text="i18n.mod_divider_or"></div>
                     
