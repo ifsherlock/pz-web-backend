@@ -24,21 +24,15 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 	}
 	// 追加内存设置虚拟项：不写入 servertest.ini，仅面板展示，
 	// 保存时由 handleSaveConfig 抽离并写入 panel_settings.json。
-	// 单独放在"服务端配置"分区，不混入玩家/PVP 或常规设置。
+	// 归属到独立的服务端配置分类(server_config)。
 	if a.Settings != nil {
 		settings := a.Settings.Load()
-		memSection := "server_runtime"
-		if a.Config.SectionLabel != nil {
-			if lbl := a.Config.SectionLabel(lang, memSection); lbl != "" {
-				memSection = lbl
-			}
-		}
 		items = append(items, config.Item{
 			Key:     MemoryLimitKey,
 			Value:   settings.MemoryLimit,
 			Label:   "JVM 内存上限 (如 3g / 4g)",
 			Tooltip: "游戏服务端 JVM 堆上限，重启游戏后生效；Build 42 建议 ≥ 2g",
-			Section: memSection,
+			Section: "server_config",
 		})
 	}
 	filename := fmt.Sprintf("%s.ini", a.ConfigApp.ServerName)

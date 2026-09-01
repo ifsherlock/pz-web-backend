@@ -44,6 +44,12 @@ func (a App) handleExpandCollection(c *gin.Context) {
 		return
 	}
 
+	// 无 API Key 时直接提示，避免空等 Steam 超时。
+	if a.Settings == nil || a.Settings.Load().SteamAPIKey == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "steam api key is required to expand collections"})
+		return
+	}
+
 	// 先查合集基本信息(名称等)
 	info, err := a.ModsApp.FetchWorkshopInfo(id)
 	if err != nil {

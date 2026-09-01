@@ -33,6 +33,23 @@
 
                     <!-- 合集展开 -->
                     <div class="divider" x-text="i18n.mod_collection_label"></div>
+
+                    <!-- 已添加的合集列表 -->
+                    <template x-if="addedCollections.length > 0">
+                        <div class="border border-base-200 rounded-box p-2 mb-1">
+                            <div class="text-[10px] font-bold text-base-content/50 mb-1 px-1" x-text="i18n.mod_collection_existing"></div>
+                            <template x-for="(col, idx) in addedCollections" :key="col.id">
+                                <div class="flex items-center gap-1 p-1 rounded hover:bg-base-200 group">
+                                    <button class="btn btn-xs btn-ghost btn-square" @click="reexpandCollection(col.id)" :title="i18n.mod_collection_reexpand">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                    </button>
+                                    <span class="text-xs font-mono truncate flex-1" x-text="col.name + ' (' + col.id + ')'"></span>
+                                    <button class="btn btn-xs btn-ghost text-error opacity-0 group-hover:opacity-100" @click="removeCollectionRecord(idx)" x-text="'✕'"></button>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
                     <div class="form-control">
                         <input type="text" class="input input-bordered input-sm w-full font-mono"
                             :placeholder="i18n.mod_collection_placeholder"

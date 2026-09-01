@@ -2,6 +2,7 @@ function app() {
             return {
                 currentTab: 'server',
                 lang: localStorage.getItem('pz_lang') || 'CN', // 记住用户选择
+                theme: localStorage.getItem('pz_theme') || 'dark', // 日夜模式
                 i18n: {}, // 存放当前语言的 UI 文本
                 languageList: [], // 存放从后端获取的语言列表
                 loading: false,
@@ -23,6 +24,7 @@ function app() {
                 collectionChecked: [],
                 collectionSelectAll: false,
                 collectionExpandMsg: '',
+                addedCollections: [], // 已添加的合集列表 {id,name}
                 // 面板设置
                 settingsKey: '',
                 settingsKeyConfigured: false,
@@ -31,6 +33,8 @@ function app() {
 
 
                 init() {
+                    // 应用日夜主题
+                    document.documentElement.setAttribute('data-theme', this.theme);
                     this.refreshAll();
                     // 监听 Tab 切换，触发sse
                     this.$watch('currentTab', (val) => {
@@ -40,6 +44,28 @@ function app() {
                             this.stopLogStream(); // 离开页面时断开连接，节省资源
                         }
                     });
+                },
+
+                // 切换日夜模式
+                toggleTheme() {
+                    this.theme = this.theme === 'dark' ? 'light' : 'dark';
+                    localStorage.setItem('pz_theme', this.theme);
+                    document.documentElement.setAttribute('data-theme', this.theme);
+                },
+
+                // 从文本中提取 Workshop ID：支持纯数字 ID 和 Steam 链接。
+                // 例如 https://steamcommunity.com/sharedfiles/filedetails/?id=3782594903
+                extractWorkshopIds(input) {
+                    const urlRe = /(?:id=)(\d{4,})/i;
+                    const pureRe = /^\d{4,}$/;
+                    const parts = String(input).split(/[,，;\s]+/).map(s => s.trim()).filter(Boolean);
+                    const ids = [];
+                    parts.forEach(p => {
+                        let m = p.match(urlRe);
+                        if (m) { ids.push(m[1]); return; }
+                        if (pureRe.test(p)) { ids.push(p); }
+                    });
+                    return [...new Set(ids)];
                 },
 
                 refreshAll() {
@@ -164,13 +190,16 @@ function app() {
                     document.getElementById('mod_modal').showModal();
                 },
 
-                // 解析输入框并添加
+                // 解析输入框并添加 (支持纯数字 ID 和 Steam 链接)
                 async lookupAndAddMods() {
                     if (!this.modInput.trim()) return;
                     
-                    // 处理逗号分隔
-                    const rawIds = this.modInput.split(/[,，;\n]/).map(s => s.trim()).filter(Boolean);
-                    if (rawIds.length === 0) return;
+                    // 用 URL 正则解析：支持 id=xxx 链接 / 纯数字 / 多行逗号分隔
+                    const rawIds = this.extractWorkshopIds(this.modInput);
+                    if (rawIds.length === 0) {
+                        this.showToast((this.i18n.msg_parse_fail || 'Parse failed') + ': no valid id', 'error');
+                        return;
+                    }
 
                     this.modLoading = true;
                     try {
@@ -270,10 +299,11 @@ function app() {
                     this.showToast(this.i18n.msg_mod_list_updated, 'success');
                 },
 
-                // 展开合集：输入合集 ID，显示全部子模组供勾选
+                // 展开合集：输入合集 ID 或 Steam 链接，显示全部子模组供勾选
                 async expandCollection() {
-                    const id = (this.collectionInput || '').trim();
-                    if (!id) return;
+                    const ids = this.extractWorkshopIds(this.collectionInput || '');
+                    if (ids.length === 0) return;
+                    const id = ids[0];
                     this.collectionLoading = true;
                     this.collectionExpandMsg = '';
                     this.collectionItems = [];
@@ -284,7 +314,7 @@ function app() {
                         const data = await res.json();
                         if (!res.ok) {
                             const msg = data.error || '';
-                            if (msg.includes('api key')) {
+                            if (msg.toLowerCase().includes('api key')) {
                                 this.collectionExpandMsg = this.i18n.mod_collection_not_key || msg;
                             } else {
                                 this.collectionExpandMsg = (this.i18n.mod_collection_error || 'Collection failed') + ': ' + msg;
@@ -293,11 +323,26 @@ function app() {
                         }
                         this.collectionItems = data.children || [];
                         this.collectionChecked = this.collectionItems.map(() => false);
+                        // 记录已添加的合集（避免重复）
+                        if (!this.addedCollections.some(c => c.id === id)) {
+                            this.addedCollections.push({ id: id, name: data.name || id });
+                        }
                     } catch (e) {
                         this.collectionExpandMsg = (this.i18n.mod_collection_error || 'Collection failed') + ': ' + e;
                     } finally {
                         this.collectionLoading = false;
                     }
+                },
+
+                // 从已添加合集列表重新展开某个合集
+                async reexpandCollection(id) {
+                    this.collectionInput = id;
+                    await this.expandCollection();
+                },
+
+                // 移除已添加合集记录（仅从列表移除，不影响已勾选子项）
+                removeCollectionRecord(idx) {
+                    this.addedCollections.splice(idx, 1);
                 },
 
                 // 全选/取消全选

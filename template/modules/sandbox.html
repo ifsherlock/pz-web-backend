@@ -11,25 +11,27 @@
                     <div class="collapse-content pt-2">
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             <template x-for="item in items" :key="item.key">
-                                <fieldset class="fieldset bg-base-200/50 border-base-200 border rounded-lg p-3">
-                                    <legend class="fieldset-legend text-xs font-bold text-secondary px-2 tracking-wide" x-text="item.key"></legend>
-                                    
-                                    <label class="label py-0 pb-1">
-                                        <span class="label-text text-sm text-base-content select-text" x-text="item.label"></span>
-                                    </label>
-
-                                    <template x-if="item.options">
-                                        <select class="select select-bordered select-sm w-full mt-1" x-model="item.value">
-                                            <template x-for="opt in item.options" :key="opt.value">
-                                                <option :value="opt.value" x-text="opt.label"></option>
-                                            </template>
-                                        </select>
-                                    </template>
-                                    <template x-if="!item.options">
-                                        <input type="text" class="input input-bordered input-sm w-full mt-1" x-model="item.value" />
-                                    </template>
-                                    <div class="mt-1 text-[10px] text-base-content/60 leading-tight truncate" x-text="item.tooltip" :title="item.tooltip"></div>
-                                </fieldset>
+                                <div class="card card-bordered bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+                                    <div class="card-body p-3 gap-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="badge badge-secondary badge-outline badge-sm font-mono shrink-0" x-text="item.key"></span>
+                                        </div>
+                                        <label class="label py-0">
+                                            <span class="label-text text-sm text-base-content/80 select-text" x-text="item.label"></span>
+                                        </label>
+                                        <template x-if="item.options">
+                                            <select class="select select-bordered select-sm w-full mt-1" x-model="item.value">
+                                                <template x-for="opt in item.options" :key="opt.value">
+                                                    <option :value="opt.value" x-text="opt.label"></option>
+                                                </template>
+                                            </select>
+                                        </template>
+                                        <template x-if="!item.options">
+                                            <input type="text" class="input input-bordered input-sm w-full mt-1" x-model="item.value" />
+                                        </template>
+                                        <div class="mt-1 text-[10px] text-base-content/50 leading-tight truncate" x-text="item.tooltip" :title="item.tooltip"></div>
+                                    </div>
+                                </div>
                             </template>
                         </div>
                     </div>

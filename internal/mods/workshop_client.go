@@ -116,7 +116,8 @@ func (c *WorkshopClient) FetchCollectionChildren(collectionID string) ([]string,
 
 	var col collectionResponse
 	if err := json.Unmarshal(body, &col); err != nil {
-		return nil, err
+		// Steam 在缺 Key / ID 无效时可能返回 HTML 错误页，转成友好错误。
+		return nil, fmt.Errorf("steam returned an invalid response (check API Key or collection id)")
 	}
 
 	if len(col.Response.Collections) == 0 {

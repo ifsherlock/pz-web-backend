@@ -7,6 +7,15 @@
     <!-- Tailwind + DaisyUI -->
     <link href="/assets/daisyui.css" rel="stylesheet" type="text/css" />
     <script src="/assets/tailwindcss.js"></script>
+    <!-- 在 Alpine 初始化前恢复保存的主题，避免闪烁 -->
+    <script>
+        (function() {
+            var saved = localStorage.getItem('pz_theme');
+            if (saved === 'light' || saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        })();
+    </script>
     <!-- App（必须在 Alpine 之前，确保 x-data="app()" 可用） -->
     <script defer src="/assets/app/main.js"></script>
     <!-- Alpine.js -->
