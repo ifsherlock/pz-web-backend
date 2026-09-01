@@ -3,8 +3,8 @@
 
     {{template "partials/desktop_tabs" .}}
 
-    <!-- 主内容区域 (与顶部横条同宽) -->
-    <div class="flex-1 md:container md:mx-auto md:bg-base-100 md:p-6 md:rounded-box md:shadow-lg md:border md:border-base-200 relative mb-4">
+    <!-- 主内容区域 (与顶部横条同宽，苹果式柔和卡片) -->
+    <div class="flex-1 md:container md:mx-auto md:bg-base-100/80 md:backdrop-blur-sm md:p-6 md:rounded-3xl md:shadow-[0_8px_30px_rgba(0,0,0,0.12)] md:border md:border-base-200/60 relative mb-4">
         
         <!-- Loading -->
         <div x-show="loading" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" style="display: none;">

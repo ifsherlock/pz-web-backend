@@ -85,6 +85,12 @@ function app() {
                     return `${sec}秒`;
                 },
 
+                // 内存 GB 格式化(保留两位小数)
+                formatGB(mb) {
+                    if (!mb && mb !== 0) return '-';
+                    return (mb / 1024).toFixed(2);
+                },
+
                 // 从文本中提取 Workshop ID：支持纯数字 ID 和 Steam 链接。
                 // 例如 https://steamcommunity.com/sharedfiles/filedetails/?id=3782594903
                 extractWorkshopIds(input) {

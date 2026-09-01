@@ -1,6 +1,6 @@
 {{define "partials/navbar"}}
     <!-- 顶部导航 (Desktop & Mobile) -->
-    <div class="navbar bg-base-100 shadow-lg z-20 sticky top-0 md:rounded-b-box md:mx-auto md:container md:mt-2 md:border-x md:border-base-200 px-4">
+    <div class="navbar bg-base-100/70 backdrop-blur-md shadow-sm z-20 sticky top-0 md:rounded-2xl md:mx-auto md:container md:mt-2 md:border md:border-base-200/50 px-4">
         <!-- 左侧：图标 + 标题(恢复放左侧) -->
         <div class="flex-1 flex items-center gap-2">
             <a class="btn btn-ghost gap-2 px-2" :title="i18n.app_title || 'PZ Manager'">
@@ -12,13 +12,13 @@
         </div>
 
         <!-- 右侧：状态 + 主题 + 语言 -->
-        <div class="flex-none flex items-center gap-2">
+        <div class="flex-none flex items-center gap-1">
             <div class="badge badge-accent badge-outline text-xs hidden sm:inline-flex"><span x-text="i18n.status_running"></span></div>
             <button class="btn btn-ghost btn-sm gap-1" @click="toggleTheme()" :title="theme === 'dark' ? '切换日间模式' : '切换夜间模式'">
                 <svg x-show="theme === 'dark'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>
                 <svg x-show="theme === 'light'" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>
             </button>
-            <select class="select select-bordered select-sm w-24" x-model="lang" @change="switchLanguage()">
+            <select class="select select-ghost select-sm w-auto min-w-[7rem] text-sm" x-model="lang" @change="switchLanguage()">
                 <template x-for="opt in languageList" :key="opt.code">
                     <option :value="opt.code" x-text="opt.name"></option>
                 </template>
