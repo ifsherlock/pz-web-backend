@@ -97,5 +97,15 @@ func (s *settingsStore) Save(settings PanelSettings) error {
 	if err != nil {
 		return err
 	}
-	return s.fs.WriteFile(s.path, data, 0o644)
+	// panel_settings.json 可能包含管理员密码，只允许服务进程用户读写。
+	if err := s.fs.WriteFile(s.path, data, 0o600); err != nil {
+		return err
+	}
+	// WriteFile 不会改变已有文件的 mode，因此对旧文件也显式收紧权限。
+	if changer, ok := s.fs.(interface {
+		Chmod(string, os.FileMode) error
+	}); ok {
+		return changer.Chmod(s.path, 0o600)
+	}
+	return nil
 }

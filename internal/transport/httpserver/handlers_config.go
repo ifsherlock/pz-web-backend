@@ -25,19 +25,18 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	// 将密码相关配置集中到末尾的安全分组，便于在同一处维护入服与管理员凭据。
-	securityKeys := map[string]bool{"Password": true, "ServerPassword": true, "RCONPassword": true}
-	normalItems := make([]config.Item, 0, len(items))
-	securityItems := make([]config.Item, 0, 3)
-	for _, item := range items {
-		if securityKeys[item.Key] {
-			item.Section = "服务端安全"
-			securityItems = append(securityItems, item)
-			continue
+	serverSection := "服务端配置"
+	if a.Config.SectionLabel != nil {
+		if label := a.Config.SectionLabel(lang, "server_config"); label != "" {
+			serverSection = label
 		}
-		normalItems = append(normalItems, item)
 	}
-	items = append(normalItems, securityItems...)
+	securitySection := "服务端安全"
+	if a.Config.SectionLabel != nil {
+		if label := a.Config.SectionLabel(lang, config.SecSecurity); label != "" && label != config.SecSecurity {
+			securitySection = label
+		}
+	}
 	// 追加内存设置虚拟项：不写入 servertest.ini，仅面板展示，
 	// 保存时由 handleSaveConfig 抽离并写入 panel_settings.json。
 	// Section 直接用中文，确保前端分组标题显示"服务端配置"。
@@ -49,14 +48,14 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 			Value:   settings.MemoryLimit,
 			Label:   "JVM 内存上限 (如 3g / 4g)",
 			Tooltip: "游戏服务端 JVM 堆上限，重启游戏后生效；Build 42 建议 ≥ 2g",
-			Section: "服务端配置",
+			Section: serverSection,
 		})
 		items = append(items, config.Item{
 			Key:     GameBranchKey,
 			Value:   branch,
 			Label:   "游戏版本分支",
 			Tooltip: "public 当前最新为 42.20.4，服务端启动时会自动拉取该分支最新内容；也可输入 Steam 官方分支名。SteamCMD 不能直接用不存在的版本号下载。",
-			Section: "服务端配置",
+			Section: serverSection,
 			Options: []config.Option{{Value: "public", Label: "稳定版 42.20.4 (public，自动更新)"}, {Value: "42.19", Label: "42.19.2 (42.19，自动更新)"}, {Value: "legacy41", Label: "41.78.21 (legacy41，自动更新)"}, {Value: "__custom__", Label: "自定义 Steam 分支名"}},
 		})
 		adminUsername, _ := normalizeAdminUsername(settings.AdminUsername)
@@ -64,8 +63,8 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 		if settings.AdminPassword != "" {
 			adminPassword = "********"
 		}
-		items = append(items, config.Item{Key: AdminUsernameKey, Value: adminUsername, Label: "管理员账户", Tooltip: "游戏内管理员账户名；保存并重启后生效。", Section: "服务端安全"})
-		items = append(items, config.Item{Key: AdminPasswordKey, Value: adminPassword, Label: "管理员密码", Tooltip: "游戏内管理员密码；留空表示保持当前密码，保存并重启后生效。", Section: "服务端安全"})
+		items = append(items, config.Item{Key: AdminUsernameKey, Value: adminUsername, Label: "管理员账户", Tooltip: "游戏内管理员账户名；保存并重启后生效。", Section: securitySection})
+		items = append(items, config.Item{Key: AdminPasswordKey, Value: adminPassword, Label: "管理员密码", Tooltip: "游戏内管理员密码；留空表示保持当前密码，保存并重启后生效。", Section: securitySection})
 	}
 	filename := fmt.Sprintf("%s.ini", a.ConfigApp.ServerName)
 	c.JSON(http.StatusOK, gin.H{"filename": filename, "lang": lang, "items": items})
