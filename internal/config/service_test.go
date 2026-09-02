@@ -56,6 +56,36 @@ UI_ServerOption_SteamVAC_tooltip = "Steam VAC Tooltip",
 	}
 }
 
+func TestService_ParseServerINI_Build42JSONTooltip(t *testing.T) {
+	base := t.TempDir()
+	langDir := filepath.Join(base, "lua/shared/Translate/CN")
+	if err := os.MkdirAll(langDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(langDir, "UI.json"), []byte(`{"UI_ServerOption_PVP":"PVP","UI_ServerOption_PVP_tooltip":"玩家可以攻击其他玩家."}`), 0o644); err != nil {
+		t.Fatalf("write ui: %v", err)
+	}
+
+	iniPath := filepath.Join(t.TempDir(), "servertest.ini")
+	if err := os.WriteFile(iniPath, []byte("PVP=true\n"), 0o644); err != nil {
+		t.Fatalf("write ini: %v", err)
+	}
+
+	svc := Service{
+		I18n: i18n.NewLoader(base),
+		SectionLabel: func(lang, sectionKey string) string {
+			return sectionKey
+		},
+	}
+	items, err := svc.ParseServerINI(iniPath, "CN")
+	if err != nil {
+		t.Fatalf("ParseServerINI: %v", err)
+	}
+	if len(items) != 1 || items[0].Label != "玩家对战" || items[0].Tooltip != "玩家可以攻击其他玩家." {
+		t.Fatalf("unexpected item: %+v", items)
+	}
+}
+
 func TestService_ParseSandboxLua_NestedKeyOptionsAndSection(t *testing.T) {
 	base := t.TempDir()
 	langDir := filepath.Join(base, "lua/shared/Translate/EN")

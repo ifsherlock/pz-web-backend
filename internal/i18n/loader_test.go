@@ -31,6 +31,30 @@ Sandbox_TestKey = "Hello Label",
 	}
 }
 
+func TestLoader_GetTranslationMap_LoadsBuild42JSON(t *testing.T) {
+	base := t.TempDir()
+	uiDir := filepath.Join(base, "lua/shared/Translate/CN")
+	if err := os.MkdirAll(uiDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+
+	uiPath := filepath.Join(uiDir, "UI.json")
+	content := `{"UI_ServerOption_TestKey_tooltip":"JSON Tooltip","UI_ServerOption_TestKey":"JSON Label"}`
+	if err := os.WriteFile(uiPath, []byte(content), 0o644); err != nil {
+		t.Fatalf("write ui: %v", err)
+	}
+
+	loader := NewLoader(base)
+	dict := loader.GetTranslationMap("CN")
+
+	if got := dict["UI_ServerOption_TestKey_tooltip"]; got != "JSON Tooltip" {
+		t.Fatalf("unexpected JSON tooltip: %q", got)
+	}
+	if got := dict["UI_ServerOption_TestKey"]; got != "JSON Label" {
+		t.Fatalf("unexpected JSON label: %q", got)
+	}
+}
+
 func TestTranslateKey_LabelAndTooltip(t *testing.T) {
 	dict := TranslationMap{
 		"UI_ServerOption_Foo":         "Foo Label",

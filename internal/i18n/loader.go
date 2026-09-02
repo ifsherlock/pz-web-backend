@@ -2,6 +2,7 @@ package i18n
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -60,18 +61,42 @@ func (l *Loader) loadLanguage(lang string) TranslationMap {
 
 	filePrefixes := []string{"Sandbox", "UI", "Tooltip"}
 	for _, prefix := range filePrefixes {
-		filename := fmt.Sprintf("%s_%s.txt", prefix, lang)
-		path := filepath.Join(l.baseGameDir, "lua/shared/Translate", lang, filename)
-
-		if _, err := os.Stat(path); os.IsNotExist(err) && lang != "EN" {
-			path = filepath.Join(l.baseGameDir, "lua/shared/Translate", "EN", fmt.Sprintf("%s_EN.txt", prefix))
+		loaded := loadTranslationAsset(l.baseGameDir, lang, prefix, t)
+		if !loaded && lang != "EN" {
+			_ = loadTranslationAsset(l.baseGameDir, "EN", prefix, t)
 		}
-
-		_ = loadFile(path, t)
 	}
 
 	l.cache[lang] = t
 	return t
+}
+
+// loadTranslationAsset 支持 Build 42 的 JSON 翻译包，同时兼容旧版 TXT 包。
+// 同一语言下优先使用 JSON，避免新版游戏同时存在旧文件时发生覆盖。
+func loadTranslationAsset(baseGameDir, lang, prefix string, targetMap TranslationMap) bool {
+	translateDir := filepath.Join(baseGameDir, "lua/shared/Translate", lang)
+	if err := loadJSONFile(filepath.Join(translateDir, prefix+".json"), targetMap); err == nil {
+		return true
+	}
+
+	legacyPath := filepath.Join(translateDir, fmt.Sprintf("%s_%s.txt", prefix, lang))
+	return loadFile(legacyPath, targetMap) == nil
+}
+
+func loadJSONFile(path string, targetMap TranslationMap) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	entries := make(map[string]string)
+	if err := json.Unmarshal(content, &entries); err != nil {
+		return err
+	}
+	for key, value := range entries {
+		targetMap[key] = value
+	}
+	return nil
 }
 
 // TranslateKey 根据 Key 从指定字典里查翻译。
