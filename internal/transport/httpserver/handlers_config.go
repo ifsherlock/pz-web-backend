@@ -42,7 +42,7 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 			Label:   "游戏版本分支",
 			Tooltip: "public 会在服务端启动时由 SteamCMD 自动拉取最新稳定版；其他选项跟随对应 Steam 分支。",
 			Section: "服务端配置",
-			Options: []config.Option{{Value: "public", Label: "自动跟随稳定版 (public)"}, {Value: "42.19", Label: "固定 42.19 分支"}, {Value: "unstable", Label: "测试版 (unstable)"}, {Value: "legacy41", Label: "旧版 41.78.21 (legacy41)"}},
+			Options: []config.Option{{Value: "public", Label: "自动跟随稳定版 (public)"}, {Value: "42.19", Label: "跟随 42.19 分支"}, {Value: "unstable", Label: "跟随测试版 (unstable)"}, {Value: "legacy41", Label: "跟随旧版 (legacy41)"}},
 		})
 	}
 	filename := fmt.Sprintf("%s.ini", a.ConfigApp.ServerName)
