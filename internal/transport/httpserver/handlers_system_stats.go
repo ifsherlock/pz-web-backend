@@ -1,8 +1,10 @@
 package httpserver
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -13,16 +15,22 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"pz-web-backend/internal/config"
+	"pz-web-backend/internal/gamequery"
 )
 
 // systemStats 容器内 CPU / 内存使用情况(读取 /proc)。
 type systemStats struct {
-	CPUPercent  float64 `json:"cpu_percent"`
-	MemTotalMB  int64   `json:"mem_total_mb"`
-	MemUsedMB   int64   `json:"mem_used_mb"`
-	MemPercent  float64 `json:"mem_percent"`
-	UptimeSec   int64   `json:"uptime_sec"`
-	GameVersion string  `json:"game_version"`
+	CPUPercent       float64 `json:"cpu_percent"`
+	MemTotalMB       int64   `json:"mem_total_mb"`
+	MemUsedMB        int64   `json:"mem_used_mb"`
+	MemPercent       float64 `json:"mem_percent"`
+	UptimeSec        int64   `json:"uptime_sec"`
+	GameVersion      string  `json:"game_version"`
+	OnlinePlayers    int     `json:"online_players"`
+	MaxPlayers       int     `json:"max_players"`
+	PlayerQueryOK    bool    `json:"player_query_ok"`
+	PlayerQueryError string  `json:"player_query_error,omitempty"`
 }
 
 // handleSystemStats 返回容器内 CPU 与内存占用，供前端仪表盘展示。
@@ -33,7 +41,35 @@ func (a App) handleSystemStats(c *gin.Context) {
 		return
 	}
 	stats.GameVersion = readGameVersion(a.BaseDataDir, a.LogPath)
+	queryContext, cancel := context.WithTimeout(c.Request.Context(), 750*time.Millisecond)
+	defer cancel()
+	queryPort := resolveGameQueryPort(a.ConfigApp.GetServerConfig("EN"))
+	if count, queryErr := gamequery.QueryPlayerCount(queryContext, net.JoinHostPort("127.0.0.1", strconv.Itoa(queryPort))); queryErr == nil {
+		stats.OnlinePlayers = count.Online
+		stats.MaxPlayers = count.Max
+		stats.PlayerQueryOK = true
+	} else {
+		stats.PlayerQueryError = queryErr.Error()
+	}
 	c.JSON(http.StatusOK, stats)
+}
+
+func resolveGameQueryPort(items []config.Item, err error) int {
+	const defaultPort = 16261
+	if err != nil {
+		return defaultPort
+	}
+	for _, item := range items {
+		if item.Key != "DefaultPort" {
+			continue
+		}
+		port, parseErr := strconv.Atoi(strings.TrimSpace(item.Value))
+		if parseErr == nil && port > 0 && port <= 65535 {
+			return port
+		}
+		break
+	}
+	return defaultPort
 }
 
 var gameVersionPattern = regexp.MustCompile(`version=([0-9]+(?:\.[0-9]+)+)`)

@@ -1,8 +1,8 @@
 {{define "modules/server"}}
         <!-- Tab: Server -->
         <div x-show="currentTab === 'server'" class="p-4 md:p-0 space-y-4" x-transition:enter="transition ease-out duration-200">
-            <!-- 仪表盘：CPU / 内存 / 运行时长 -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <!-- 仪表盘：版本 / 在线人数 / CPU / 内存 / 运行时长 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
                 <!-- 服务端版本 -->
                 <div class="card card-bordered bg-base-100 shadow-sm">
                     <div class="card-body p-4 flex flex-row items-center gap-3">
@@ -12,6 +12,20 @@
                         <div class="flex-1 min-w-0">
                             <div class="text-xs text-base-content/60">服务端版本</div>
                             <div class="text-xl font-bold truncate" x-text="stats.game_version || 'unknown'"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 在线玩家 -->
+                <div class="card card-bordered bg-base-100 shadow-sm" :title="stats.player_query_ok ? '来自游戏服务端实时查询' : (stats.player_query_error || '在线人数查询不可用')">
+                    <div class="card-body p-4 flex flex-row items-center gap-3">
+                        <div class="p-3 rounded-full bg-success/10 text-success shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198v.001c0 .732-.273 1.43-.764 1.973A11.959 11.959 0 0112 21c-1.869 0-3.638-.426-5.214-1.187A2.998 2.998 0 016 18.72m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 9.094 9.094 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" /></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs text-base-content/60">在线玩家</div>
+                            <div class="text-xl font-bold" x-text="stats.player_query_ok ? stats.online_players + ' / ' + stats.max_players : '-' "></div>
+                            <div class="text-[10px] text-base-content/50" x-text="stats.player_query_ok ? '当前 / 上限' : '查询不可用'"></div>
                         </div>
                     </div>
                 </div>

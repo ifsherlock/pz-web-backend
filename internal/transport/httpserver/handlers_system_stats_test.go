@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"pz-web-backend/internal/config"
 )
 
 func TestReadGameVersion(t *testing.T) {
@@ -24,5 +26,19 @@ func TestReadGameVersion(t *testing.T) {
 func TestReadGameVersionUnknown(t *testing.T) {
 	if got := readGameVersion(t.TempDir(), ""); got != "unknown" {
 		t.Fatalf("readGameVersion()=%q, want unknown", got)
+	}
+}
+
+func TestResolveGameQueryPort(t *testing.T) {
+	items := []config.Item{{Key: "UDPPort", Value: "16262"}, {Key: "DefaultPort", Value: "16270"}}
+	if got := resolveGameQueryPort(items, nil); got != 16270 {
+		t.Fatalf("resolveGameQueryPort()=%d, want 16270", got)
+	}
+}
+
+func TestResolveGameQueryPortFallsBackForInvalidConfig(t *testing.T) {
+	items := []config.Item{{Key: "DefaultPort", Value: "invalid"}}
+	if got := resolveGameQueryPort(items, nil); got != 16261 {
+		t.Fatalf("resolveGameQueryPort()=%d, want 16261", got)
 	}
 }

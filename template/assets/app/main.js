@@ -17,7 +17,7 @@ function app() {
                 sandboxSections: {},
                 logs: '...',
                 status: { pid: 0, uptime: '0s' },
-                stats: { cpu_percent: 0, mem_used_mb: 0, mem_total_mb: 0, mem_percent: 0, uptime_sec: 0, game_version: 'unknown' },
+                stats: { cpu_percent: 0, mem_used_mb: 0, mem_total_mb: 0, mem_percent: 0, uptime_sec: 0, game_version: 'unknown', online_players: 0, max_players: 0, player_query_ok: false, player_query_error: '' },
                 statsTimer: null,
                 customGameBranch: '',
                 toast: { show: false, message: '', type: 'success' },
