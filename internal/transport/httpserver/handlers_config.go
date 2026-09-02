@@ -13,6 +13,7 @@ import (
 // MemoryLimitKey 是面板里的"虚拟"配置项键名：不会写入 servertest.ini，
 // 而是保存到 panel_settings.json，由 start-pz.sh 读取。
 const MemoryLimitKey = "PZ_MEMORY_LIMIT"
+const GameBranchKey = "PZ_BRANCH"
 
 func (a App) handleGetServerConfig(c *gin.Context) {
 	lang := strings.ToUpper(c.DefaultQuery("lang", "CN"))
@@ -27,12 +28,21 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 	// Section 直接用中文，确保前端分组标题显示"服务端配置"。
 	if a.Settings != nil {
 		settings := a.Settings.Load()
+		branch, _ := normalizeGameBranch(settings.GameBranch)
 		items = append(items, config.Item{
 			Key:     MemoryLimitKey,
 			Value:   settings.MemoryLimit,
 			Label:   "JVM 内存上限 (如 3g / 4g)",
 			Tooltip: "游戏服务端 JVM 堆上限，重启游戏后生效；Build 42 建议 ≥ 2g",
 			Section: "服务端配置",
+		})
+		items = append(items, config.Item{
+			Key:     GameBranchKey,
+			Value:   branch,
+			Label:   "游戏版本分支",
+			Tooltip: "public 当前对应稳定版 42.20.4；保存并重启后由 SteamCMD 拉取。42.19 和 legacy41 是 Steam 的历史分支。",
+			Section: "服务端配置",
+			Options: []config.Option{{Value: "public", Label: "稳定版 42.20.4 (public)"}, {Value: "42.19", Label: "42.19.2 (42.19)"}, {Value: "unstable", Label: "测试版 (unstable)"}, {Value: "legacy41", Label: "41.78.21 (legacy41)"}},
 		})
 	}
 	filename := fmt.Sprintf("%s.ini", a.ConfigApp.ServerName)
@@ -77,6 +87,15 @@ func (a App) handleSaveConfig(c *gin.Context) {
 					return
 				}
 				settings.MemoryLimit = memoryLimit
+				continue
+			}
+			if item.Key == GameBranchKey {
+				branch, err := normalizeGameBranch(item.Value)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
+				}
+				settings.GameBranch = branch
 				continue
 			}
 			filtered = append(filtered, item)

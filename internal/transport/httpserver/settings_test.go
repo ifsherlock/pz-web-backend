@@ -35,3 +35,15 @@ func TestNormalizeMemoryLimit(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeGameBranch(t *testing.T) {
+	for _, tt := range []struct{ input, want string; wantErr bool }{
+		{"", "public", false}, {" public ", "public", false}, {"42.19", "42.19", false},
+		{"42.20.4;rm", "", true}, {"../public", "", true},
+	} {
+		got, err := normalizeGameBranch(tt.input)
+		if tt.wantErr != (err != nil) || (!tt.wantErr && got != tt.want) {
+			t.Fatalf("normalizeGameBranch(%q) = %q, %v", tt.input, got, err)
+		}
+	}
+}

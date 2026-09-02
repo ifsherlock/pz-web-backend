@@ -17,11 +17,13 @@ import (
 type PanelSettings struct {
 	SteamAPIKey string `json:"steam_api_key"`
 	MemoryLimit string `json:"memory_limit"` // 例: 3g
+	GameBranch  string `json:"game_branch"`  // Steam 分支名，例如 public / 42.19
 }
 
 const panelSettingsFilename = "panel_settings.json"
 
 var memoryLimitPattern = regexp.MustCompile(`^[1-9][0-9]*[mMgG]$`)
+var gameBranchPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$`)
 
 func normalizeMemoryLimit(raw string) (string, error) {
 	value := strings.TrimSpace(raw)
@@ -32,6 +34,17 @@ func normalizeMemoryLimit(raw string) (string, error) {
 		return "", fmt.Errorf("memory limit must use a positive integer followed by m or g, for example 3072m or 4g")
 	}
 	return strings.ToLower(value), nil
+}
+
+func normalizeGameBranch(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "public", nil
+	}
+	if !gameBranchPattern.MatchString(value) {
+		return "", fmt.Errorf("game branch must contain only letters, numbers, dots, underscores, or hyphens")
+	}
+	return value, nil
 }
 
 // settingsStore 负责读写面板设置文件。

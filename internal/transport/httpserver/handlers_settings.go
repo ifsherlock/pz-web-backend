@@ -11,10 +11,12 @@ import (
 // 不回传完整 Key，仅返回是否已配置与掩码，便于前端确认存放成功。
 func (a App) handleGetSettings(c *gin.Context) {
 	settings := a.Settings.Load()
+	branch, _ := normalizeGameBranch(settings.GameBranch)
 	c.JSON(http.StatusOK, gin.H{
 		"steam_api_key_configured": settings.SteamAPIKey != "",
 		"steam_api_key_masked":     maskKey(settings.SteamAPIKey),
 		"memory_limit":             settings.MemoryLimit,
+		"game_branch":              branch,
 	})
 }
 
@@ -35,6 +37,7 @@ func (a App) handleSaveSettings(c *gin.Context) {
 	var req struct {
 		SteamAPIKey *string `json:"steam_api_key"`
 		MemoryLimit *string `json:"memory_limit"`
+		GameBranch  *string `json:"game_branch"`
 	}
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -53,6 +56,14 @@ func (a App) handleSaveSettings(c *gin.Context) {
 		}
 		next.MemoryLimit = memoryLimit
 	}
+	if req.GameBranch != nil {
+		branch, err := normalizeGameBranch(*req.GameBranch)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		next.GameBranch = branch
+	}
 
 	if err := a.Settings.Save(next); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -70,5 +81,6 @@ func (a App) handleSaveSettings(c *gin.Context) {
 		"status":               "ok",
 		"steam_api_key_masked": maskKey(next.SteamAPIKey),
 		"memory_limit":         next.MemoryLimit,
+		"game_branch":          next.GameBranch,
 	})
 }
