@@ -14,6 +14,7 @@ function app() {
                 status: { pid: 0, uptime: '0s' },
                 stats: { cpu_percent: 0, mem_used_mb: 0, mem_total_mb: 0, mem_percent: 0, uptime_sec: 0, game_version: 'unknown' },
                 statsTimer: null,
+                customGameBranch: '',
                 toast: { show: false, message: '', type: 'success' },
                 configTooltip: { show: false, key: '', text: '', left: 12, top: 12, maxWidth: 420 },
                 modInput: '',
@@ -159,6 +160,11 @@ function app() {
                         }, {});
 
                         if (type === 'server') {
+                            const branchItem = data.items.find(i => i.key === 'PZ_BRANCH');
+                            if (branchItem && !['public', '42.19', 'legacy41', '__custom__'].includes(branchItem.value)) {
+                                this.customGameBranch = branchItem.value;
+                                branchItem.value = '__custom__';
+                            }
                             this.serverConfig = data.items; // 保存原始数组用于提交
                             this.serverSections = Object.fromEntries(
                                 Object.entries(grouped).filter(([, items]) =>
@@ -497,7 +503,16 @@ function app() {
                     if (restart && !confirm(this.i18n.confirm_save_restart)) return;
                     this.loading = true;
                     try {
-                        const items = type === 'server' ? this.serverConfig : this.sandboxConfig;
+                        const sourceItems = type === 'server' ? this.serverConfig : this.sandboxConfig;
+                        const items = sourceItems.map(item => {
+                            if (type === 'server' && item.key === 'PZ_BRANCH' && item.value === '__custom__') {
+                                return { ...item, value: this.customGameBranch.trim() };
+                            }
+                            return item;
+                        });
+                        if (type === 'server' && items.some(item => item.key === 'PZ_BRANCH' && !item.value)) {
+                            throw new Error('请输入 Steam 分支名');
+                        }
 
                         const res = await fetch(`/api/config/${type}`, {
                             method: 'POST',

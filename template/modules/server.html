@@ -102,6 +102,9 @@
                                                 </template>
                                             </select>
                                         </template>
+                                        <template x-if="item.key === 'PZ_BRANCH' && item.value === '__custom__'">
+                                            <input type="text" class="input input-bordered input-sm w-full mt-1" placeholder="例如 beta 分支名" x-model="customGameBranch" />
+                                        </template>
                                         <template x-if="!item.options && (item.value === 'true' || item.value === 'false')">
                                             <select class="select select-bordered select-sm w-full mt-1" x-model="item.value" :aria-label="item.label">
                                                 <option value="true" x-text="i18n.option_true || 'true'"></option>
