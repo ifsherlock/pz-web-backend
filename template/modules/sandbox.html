@@ -37,7 +37,13 @@
                                                 </template>
                                             </select>
                                         </template>
-                                        <template x-if="!item.options">
+                                        <template x-if="!item.options && (item.value === 'true' || item.value === 'false')">
+                                            <select class="select select-bordered select-sm w-full mt-1" x-model="item.value" :aria-label="item.label">
+                                                <option value="true" x-text="i18n.option_true || 'true'"></option>
+                                                <option value="false" x-text="i18n.option_false || 'false'"></option>
+                                            </select>
+                                        </template>
+                                        <template x-if="!item.options && item.value !== 'true' && item.value !== 'false'">
                                             <input type="text" class="input input-bordered input-sm w-full mt-1" x-model="item.value" />
                                         </template>
                                     </div>

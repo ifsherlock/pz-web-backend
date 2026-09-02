@@ -289,7 +289,7 @@ var serverOptionCN = map[string]string{
 	"SafehouseDaySurvivedToClaim": "安全屋认领所需存活天数",
 	"SafehouseDisableDisguises": "安全屋禁用伪装",
 	"SafehousePreventsLootRespawn": "安全屋阻止物资刷新",
-	"SafeHouseRemovalTime": "安全屋移除时间",
+	"SafeHouseRemovalTime": "安全屋移除时间（小时）",
 	"SafetyCooldownTimer":  "安全模式冷却时间",
 	"SafetyDisconnectDelay": "安全模式断开延迟",
 	"SafetySystem":         "安全系统",
