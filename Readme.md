@@ -49,7 +49,7 @@
 
 *   **界面资源**：
     *   服务端配置、沙盒设置和监控维护按用途分组，密码项固定在安全分组末尾。
-    *   `template/assets/pz-official-logo.png` 为官方 Project Zomboid 图标，并作为浏览器 favicon 提供。
+    *   `template/assets/pz-official-logo.png` 使用 [PZ Wiki 的 SpiffoGlobe 素材](https://pzwiki.net/w/images/b/b5/SpiffoGlobe.png)，经高质量缩放为 64×64 RGBA，并作为浏览器 favicon 提供。
 
 *   **轻量**：
     *   基于 Go (Gin) 编写；前端使用 Alpine.js + Tailwind CSS，无 Node.js 依赖。
