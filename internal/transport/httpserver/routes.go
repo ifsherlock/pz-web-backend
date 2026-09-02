@@ -32,5 +32,8 @@ func NewEngine(cfg Config) *gin.Engine {
 
 	app := NewApp(cfg.BaseDataDir, cfg.BaseGameDir, cfg.ServerName, cfg.LogPath, cfg.Build, cfg.DevMode)
 	app.RegisterRoutes(r)
+	if !cfg.DevMode {
+		app.startBackupScheduler()
+	}
 	return r
 }

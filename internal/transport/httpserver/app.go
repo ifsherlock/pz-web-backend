@@ -2,12 +2,14 @@ package httpserver
 
 import (
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"pz-web-backend/internal/application/configapp"
 	"pz-web-backend/internal/application/i18napp"
 	"pz-web-backend/internal/application/modsapp"
 	"pz-web-backend/internal/application/updateapp"
+	"pz-web-backend/internal/backup"
 	"pz-web-backend/internal/config"
 	"pz-web-backend/internal/i18n"
 	"pz-web-backend/internal/infra/executil"
@@ -42,6 +44,7 @@ type App struct {
 	LogTailer logtail.Tailer
 
 	Settings *settingsStore
+	Backups  *backup.Service
 }
 
 func NewApp(baseDataDir string, baseGameDir string, serverName string, logPath string, build BuildInfo, devMode bool) App {
@@ -74,6 +77,8 @@ func NewApp(baseDataDir string, baseGameDir string, serverName string, logPath s
 
 	// 加载面板持久化设置(Steam API Key / 内存上限等)。
 	settingsStore := newSettingsStore(osfs, installDir)
+	backupService := backup.NewService(baseDataDir)
+	backupService.PanelDir = filepath.Dir(settingsStore.path)
 
 	// Steam API Key 用于解析创意工坊合集(GetCollectionDetails)，
 	// 普通单个 Mod 解析不需要。
@@ -94,6 +99,7 @@ func NewApp(baseDataDir string, baseGameDir string, serverName string, logPath s
 		I18n:        loader,
 		Config:      configSvc,
 		Settings:    settingsStore,
+		Backups:     backupService,
 
 		ConfigApp: configapp.Service{
 			BaseDataDir: baseDataDir,

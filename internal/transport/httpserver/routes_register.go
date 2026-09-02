@@ -12,4 +12,5 @@ func (a App) RegisterRoutes(r *gin.Engine) {
 	a.registerSystemRoutes(r)
 	a.registerServiceRoutes(r)
 	a.registerLogRoutes(r)
+	a.registerBackupRoutes(r)
 }

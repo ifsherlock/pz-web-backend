@@ -75,7 +75,7 @@
                     <div class="collapse-content pt-2">
                         <!-- 模组字段由独立的“模组与工坊”页面维护。 -->
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            <template x-for="item in items.filter(i => i.key !== 'Mods' && i.key !== 'WorkshopItems')" :key="item.key">
+                            <template x-for="item in items.filter(i => isServerConfigItemVisible(i))" :key="item.key">
                                 <div class="card card-bordered bg-base-100 shadow-sm hover:shadow-md transition-shadow">
                                     <div class="card-body p-3 gap-1">
                                         <div class="flex items-center gap-2">

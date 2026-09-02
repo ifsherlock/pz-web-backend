@@ -36,6 +36,8 @@ function app() {
                 settingsKeyMasked: '',
                 modsLoaded: false,
                 logConnected: false,
+                backups: { enabled: false, interval_hours: 24, max_versions: 10, server_settings: [], backups: [] },
+                backupNote: '',
 
 
                 init() {
@@ -56,6 +58,9 @@ function app() {
                         }
                         if (val === 'mods') {
                             this.loadModManager();
+                        }
+                        if (val === 'monitor') {
+                            this.loadBackups();
                         }
                     });
                 },
@@ -185,7 +190,7 @@ function app() {
                             const sectionRank = new Map(sectionOrder.map((name, index) => [name, index]));
                             this.serverSections = Object.fromEntries(
                                 Object.entries(grouped)
-                                    .filter(([, items]) => items.some(item => item.key !== 'Mods' && item.key !== 'WorkshopItems'))
+                                    .filter(([, items]) => items.some(item => this.isServerConfigItemVisible(item)))
                                     .sort(([left], [right]) => (sectionRank.get(left) ?? 999) - (sectionRank.get(right) ?? 999))
                             );
                         } else {
@@ -255,6 +260,106 @@ function app() {
                     } finally {
                         this.modLoading = false;
                     }
+                },
+
+                isServerConfigItemVisible(item) {
+                    return !['Mods', 'WorkshopItems', 'SaveWorldEveryMinutes', 'BackupsCount', 'BackupsOnStart', 'BackupsOnVersionChange', 'BackupsPeriod'].includes(item.key);
+                },
+
+                async loadBackups() {
+                    try {
+                        const res = await fetch(`/api/backups?lang=${this.lang}`);
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || '加载备份设置失败');
+                        this.backups = data;
+                    } catch (e) {
+                        this.showToast(e.message, 'error');
+                    }
+                },
+
+                async saveBackupSettings() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch('/api/backups/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                enabled: !!this.backups.enabled,
+                                interval_hours: Number(this.backups.interval_hours),
+                                max_versions: Number(this.backups.max_versions),
+                                server_settings: this.backups.server_settings
+                            })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || '保存备份设置失败');
+                        this.showToast('备份设置已保存', 'success');
+                        await this.loadBackups();
+                    } catch (e) {
+                        this.showToast(e.message, 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async createBackup() {
+                    this.loading = true;
+                    try {
+                        const res = await fetch('/api/backups', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ note: this.backupNote })
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || '创建备份失败');
+                        this.backupNote = '';
+                        this.showToast('备份已创建', 'success');
+                        await this.loadBackups();
+                    } catch (e) {
+                        this.showToast(e.message, 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async restoreBackup(id) {
+                    if (!confirm('恢复备份会覆盖当前存档和配置，并重启游戏服务端。确定继续吗？')) return;
+                    this.loading = true;
+                    try {
+                        const res = await fetch(`/api/backups/${encodeURIComponent(id)}/restore`, { method: 'POST' });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || '恢复备份失败');
+                        this.showToast('备份已恢复，服务端正在重启', 'success');
+                    } catch (e) {
+                        this.showToast(e.message, 'error');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+
+                async deleteBackup(id) {
+                    if (!confirm('确定删除这份备份吗？')) return;
+                    try {
+                        const res = await fetch(`/api/backups/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || '删除备份失败');
+                        await this.loadBackups();
+                    } catch (e) {
+                        this.showToast(e.message, 'error');
+                    }
+                },
+
+                formatBackupSize(bytes) {
+                    if (!bytes) return '0 B';
+                    const units = ['B', 'KB', 'MB', 'GB'];
+                    let value = Number(bytes);
+                    let index = 0;
+                    while (value >= 1024 && index < units.length - 1) { value /= 1024; index++; }
+                    return `${value.toFixed(index ? 1 : 0)} ${units[index]}`;
+                },
+
+                formatBackupTime(value) {
+                    if (!value) return '-';
+                    return new Date(value).toLocaleString();
                 },
 
                 // 解析输入框并添加 (支持纯数字 ID 和 Steam 链接)
@@ -623,7 +728,10 @@ function app() {
                 },
 
                 showConfigTooltip(event, item) {
-                    const text = String(item.tooltip || '').trim();
+                    const text = String(item.tooltip || '')
+                        .replace(/\\r\\n|\\n|\\r/g, '\n')
+                        .replace(/<br\s*\/?>/gi, '\n')
+                        .trim();
                     if (!text) return;
 
                     const targetRect = event.currentTarget.getBoundingClientRect();

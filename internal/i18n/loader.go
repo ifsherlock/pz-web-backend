@@ -94,7 +94,7 @@ func loadJSONFile(path string, targetMap TranslationMap) error {
 		return err
 	}
 	for key, value := range entries {
-		targetMap[key] = value
+		targetMap[key] = normalizeTranslationText(value)
 	}
 	return nil
 }
@@ -160,9 +160,7 @@ func loadFile(path string, targetMap TranslationMap) error {
 		if len(matches) == 3 {
 			key := matches[1]
 			val := matches[2]
-			val = strings.ReplaceAll(val, `\"`, `"`)
-			val = strings.ReplaceAll(val, `<br>`, "\n")
-			targetMap[key] = val
+			targetMap[key] = normalizeTranslationText(val)
 		}
 	}
 
@@ -170,6 +168,20 @@ func loadFile(path string, targetMap TranslationMap) error {
 		return err
 	}
 	return nil
+}
+
+// normalizeTranslationText converts the escaped line breaks shipped in some
+// translation packages into real line breaks for display in the tooltip.
+func normalizeTranslationText(value string) string {
+	value = strings.ReplaceAll(value, `\"`, `"`)
+	value = strings.ReplaceAll(value, `\r\n`, "\n")
+	value = strings.ReplaceAll(value, `\n`, "\n")
+	value = strings.ReplaceAll(value, `\r`, "\n")
+	value = strings.ReplaceAll(value, `\t`, "\t")
+	value = strings.ReplaceAll(value, `<br>`, "\n")
+	value = strings.ReplaceAll(value, `<br/>`, "\n")
+	value = strings.ReplaceAll(value, `<br />`, "\n")
+	return value
 }
 
 func isUTF8(content []byte) bool {

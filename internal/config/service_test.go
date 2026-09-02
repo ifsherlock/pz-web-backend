@@ -173,6 +173,24 @@ func TestInferServerSectionKey_DetailedGroups(t *testing.T) {
 	}
 }
 
+func TestSandboxOptions_UsesBuild42TranslationAlias(t *testing.T) {
+	dict := i18n.TranslationMap{
+		"Sandbox_MetaEventFreq_option1": "永不",
+		"Sandbox_MetaEventFreq_option2": "偶尔",
+		"Sandbox_MetaEventFreq_option3": "经常",
+		"Sandbox_ZSpeed_option1":        "短跑运动员",
+		"Sandbox_ZSpeed_option2":        "快速蹒跚",
+	}
+	sleeping := sandboxOptions(dict, "SleepingEvent", "SleepingEvent")
+	if len(sleeping) != 3 || sleeping[0].Label != "永不" || sleeping[2].Label != "经常" {
+		t.Fatalf("unexpected SleepingEvent options: %+v", sleeping)
+	}
+	speed := sandboxOptions(dict, "ZombieLore.Speed", "Speed")
+	if len(speed) != 2 || speed[0].Label != "短跑运动员" {
+		t.Fatalf("unexpected ZombieLore.Speed options: %+v", speed)
+	}
+}
+
 func TestService_GenerateSandboxLua_QuotesStringValues(t *testing.T) {
 	svc := Service{}
 	out := svc.GenerateSandboxLua([]Item{

@@ -15,11 +15,15 @@ import (
 // 保存在挂载卷(容器内 /opt/pz-web-backend/panel_settings.json)，
 // 这样不重建镜像也能修改配置，start-pz.sh 也可读取内存设置。
 type PanelSettings struct {
-	SteamAPIKey   string `json:"steam_api_key"`
-	MemoryLimit   string `json:"memory_limit"` // 例: 3g
-	GameBranch    string `json:"game_branch"`  // Steam 分支名，例如 public / 42.19
-	AdminUsername string `json:"admin_username"`
-	AdminPassword string `json:"admin_password"` // 管理员密码仅在面板持久化，不通过 GET 接口返回
+	SteamAPIKey         string `json:"steam_api_key"`
+	MemoryLimit         string `json:"memory_limit"` // 例: 3g
+	GameBranch          string `json:"game_branch"`  // Steam 分支名，例如 public / 42.19
+	AdminUsername       string `json:"admin_username"`
+	AdminPassword       string `json:"admin_password"` // 管理员密码仅在面板持久化，不通过 GET 接口返回
+	BackupEnabled       bool   `json:"backup_enabled"`
+	BackupIntervalHours int    `json:"backup_interval_hours"`
+	BackupMaxVersions   int    `json:"backup_max_versions"`
+	BackupLastRunUnix   int64  `json:"backup_last_run_unix"`
 }
 
 const panelSettingsFilename = "panel_settings.json"

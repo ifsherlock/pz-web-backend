@@ -69,3 +69,11 @@ func TestTranslateKey_LabelAndTooltip(t *testing.T) {
 		t.Fatalf("tip=%q", tip)
 	}
 }
+
+func TestNormalizeTranslationText(t *testing.T) {
+	got := normalizeTranslationText(`第一行\n第二行<br>第三行\t缩进`)
+	want := "第一行\n第二行\n第三行\t缩进"
+	if got != want {
+		t.Fatalf("normalizeTranslationText()=%q, want %q", got, want)
+	}
+}

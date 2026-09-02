@@ -49,8 +49,18 @@ func (s Service) ParseServerINI(path string, lang string) ([]Item, error) {
 		val := strings.TrimSpace(parts[1])
 
 		label, tooltip := i18n.TranslateKey(dict, key, "UI_ServerOption_")
+		if fallback, ok := serverTooltipCN[key]; ok {
+			if tooltip == "" {
+				tooltip = fallback
+			} else if key == "RCONPassword" {
+				tooltip = fallback
+			}
+		}
 		// 游戏翻译文件未覆盖的键，回退使用内置中文映射。
 		// 前端 legend 已经显示英文键名，这里只放中文翻译。
+		if (label == "" || label == key) && strings.EqualFold(lang, "EN") && tooltip != "" {
+			label = tooltip
+		}
 		if label == "" || label == key {
 			if cn, ok := serverOptionCN[key]; ok {
 				label = cn
@@ -126,16 +136,50 @@ func (s Service) ParseSandboxLua(path string, lang string) ([]Item, error) {
 			}
 
 			label, tooltip := i18n.TranslateKey(dict, rawKey, "Sandbox_")
+			alias := sandboxTranslationAliases[fullKey]
+			if alias == "" {
+				alias = sandboxTranslationAliases[rawKey]
+			}
+			if alias != "" {
+				aliasLabel, aliasTooltip := i18n.TranslateKey(dict, alias, "Sandbox_")
+				if (label == "" || label == rawKey) && aliasLabel != alias {
+					label = aliasLabel
+				}
+				if tooltip == "" {
+					tooltip = aliasTooltip
+				}
+			}
 			// 游戏翻译文件未覆盖的沙盒键，回退使用内置中文映射。
 			// 前端 legend 已显示英文键名，这里只放中文翻译。
 			if label == "" || label == rawKey {
-				if cn, ok := sandboxOptionCN[rawKey]; ok {
-					label = cn
-				} else {
+				if strings.EqualFold(lang, "CN") {
+					if cn, ok := sandboxOptionCN[rawKey]; ok {
+						label = cn
+					}
+				}
+				if label == "" || label == rawKey {
 					label = rawKey
 				}
 			}
-			options := sandboxOptions(dict, rawKey)
+			if tooltip == "" {
+				tooltip = sandboxTooltipCN[fullKey]
+				if tooltip == "" {
+					tooltip = sandboxTooltipCN[rawKey]
+				}
+			}
+			if strings.EqualFold(lang, "CN") {
+				if override := sandboxLabelOverrideCN[fullKey]; override != "" {
+					label = override
+				} else if override := sandboxLabelOverrideCN[rawKey]; override != "" {
+					label = override
+				}
+				if override := sandboxTooltipOverrideCN[fullKey]; override != "" {
+					tooltip = override
+				} else if override := sandboxTooltipOverrideCN[rawKey]; override != "" {
+					tooltip = override
+				}
+			}
+			options := sandboxOptions(dict, fullKey, rawKey)
 
 			sectionKey := inferSandboxSectionKey(fullKey)
 			section := s.resolveSectionLabel(lang, sectionKey)
@@ -228,9 +272,16 @@ func (s Service) resolveSectionLabel(lang string, sectionKey string) string {
 	return label
 }
 
-func sandboxOptions(dict i18n.TranslationMap, key string) []Option {
+func sandboxOptions(dict i18n.TranslationMap, fullKey, rawKey string) []Option {
 	var options []Option
 	prefix := "Sandbox_"
+	key := sandboxValueTranslationAliases[fullKey]
+	if key == "" {
+		key = sandboxValueTranslationAliases[rawKey]
+	}
+	if key == "" {
+		key = rawKey
+	}
 	for i := 1; ; i++ {
 		optionKey := fmt.Sprintf("%s%s_option%d", prefix, key, i)
 		if label, ok := dict[optionKey]; ok {
