@@ -50,6 +50,7 @@
 *   **界面资源**：
     *   服务端配置、沙盒设置和监控维护按用途分组，密码项固定在安全分组末尾。
     *   `template/assets/pz-official-logo.png` 使用 [PZ Wiki 的 SpiffoGlobe 素材](https://pzwiki.net/w/images/b/b5/SpiffoGlobe.png)，经高质量缩放为 64×64 RGBA，并作为浏览器 favicon 提供。
+    *   `template/assets/pz-background.jpg`（[来源](https://wallpapercave.com/wp/wp10856897.jpg)）和 `template/assets/pz-background-02.jpg`（[来源](https://wallpapercave.com/wp/wp10856882.jpg)）为两张 Project Zomboid 壁纸原图；顶部壁纸下拉框支持切换，选择保存在当前浏览器中。
 
 *   **轻量**：
     *   基于 Go (Gin) 编写；前端使用 Alpine.js + Tailwind CSS，无 Node.js 依赖。
@@ -147,7 +148,7 @@ $env:GOARCH = "amd64"
 go build -o pz-web-backend-linux-amd64 .
 ```
 
-将二进制复制到容器挂载目录 `data/web-backend/pz-web-backend`，然后重启 `webconfig`。面板监听容器内 `:10888`，由 Nginx 负责 Basic Auth、HTTP/HTTPS 和 `/filebrowser/` 反向代理。
+将二进制复制到容器挂载目录 `data/web-backend/pz-web-backend`，然后重启 `webconfig`。面板监听容器内 `:10888`，由 Nginx 负责 Basic Auth、HTTP/HTTPS 和 `/filebrowser/` 反向代理。模板、脚本、壁纸和 favicon 都已通过 `embed` 内嵌，无需再复制 `template/` 目录。
 
 ---
 

@@ -3,6 +3,11 @@ function app() {
                 currentTab: 'server',
                 lang: localStorage.getItem('pz_lang') || 'CN', // 记住用户选择
                 theme: localStorage.getItem('pz_theme') || 'dark', // 日夜模式
+                wallpapers: [
+                    { id: 'rainy-night', label: '雨夜插画', url: '/assets/pz-background.jpg' },
+                    { id: 'spiffo-gray', label: 'Spiffo 留白', url: '/assets/pz-background-02.jpg' }
+                ],
+                wallpaper: localStorage.getItem('pz_wallpaper') || 'rainy-night',
                 i18n: {}, // 存放当前语言的 UI 文本
                 languageList: [], // 存放从后端获取的语言列表
                 loading: false,
@@ -48,6 +53,7 @@ function app() {
                 init() {
                     // 应用日夜主题
                     document.documentElement.setAttribute('data-theme', this.theme);
+                    this.applyWallpaper();
                     this.refreshAll();
                     // 启动仪表盘 CPU/内存轮询(每3秒)
                     this.fetchStats();
@@ -75,6 +81,17 @@ function app() {
                     this.theme = this.theme === 'dark' ? 'light' : 'dark';
                     localStorage.setItem('pz_theme', this.theme);
                     document.documentElement.setAttribute('data-theme', this.theme);
+                },
+
+                applyWallpaper() {
+                    const selected = this.wallpapers.find(item => item.id === this.wallpaper) || this.wallpapers[0];
+                    this.wallpaper = selected.id;
+                    localStorage.setItem('pz_wallpaper', selected.id);
+                    document.documentElement.style.setProperty('--pz-wallpaper-image', `url("${selected.url}")`);
+                },
+
+                switchWallpaper() {
+                    this.applyWallpaper();
                 },
 
                 // 拉取容器 CPU / 内存统计
