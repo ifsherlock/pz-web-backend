@@ -1,166 +1,216 @@
-{{define "modules/mod_modal"}}
-   <!-- 模组管理器 Modal -->
-    <dialog id="mod_modal" class="modal">
-        <div class="modal-box w-11/12 max-w-5xl h-[80vh] flex flex-col p-0 bg-base-100">
-            <!-- 标题栏 -->
-            <div class="p-4 border-b border-base-200 flex justify-between items-center bg-base-200/50">
-                <h3 class="font-bold text-lg flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                    <span x-text="i18n.mod_manager_title"></span>
-                </h3>
-                <form method="dialog">
-                    <button class="btn btn-sm btn-circle btn-ghost">✕</button>
-                </form>
+{{define "modules/mods"}}
+        <!-- Tab: Mods & Workshop -->
+        <div x-show="currentTab === 'mods'" class="flex min-h-[44rem] flex-col overflow-hidden" x-transition:enter="transition ease-out duration-200" style="display: none;">
+            <!-- 页面标题栏 -->
+            <div class="flex items-center justify-between gap-3 border-b border-base-200 px-1 pb-4">
+                <div class="flex min-w-0 items-center gap-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="truncate text-base font-bold md:text-lg" x-text="i18n.mod_manager_title"></h3>
+                        <div class="text-xs text-base-content/50">
+                            <span x-text="i18n.mod_active_list_title"></span>
+                            <span class="font-mono" x-text="' · ' + activeMods.length"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                    <button class="btn btn-sm btn-circle btn-ghost" @click="loadModManager(true)" :disabled="modLoading" :aria-label="i18n.log_refresh" :title="i18n.log_refresh">
+                        <span x-show="modLoading" class="loading loading-spinner loading-sm"></span>
+                        <svg x-show="!modLoading" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                    <div class="hidden items-center gap-2 sm:flex">
+                        <button class="btn btn-sm border-base-300 bg-base-200 text-base-content hover:bg-base-300" @click="saveModsConfig(false)" :disabled="modLoading || !modsLoaded">
+                            <span x-text="i18n.btn_save"></span>
+                        </button>
+                        <button class="btn btn-primary btn-sm" @click="saveModsConfig(true)" :disabled="modLoading || !modsLoaded">
+                            <span x-text="i18n.btn_save_restart"></span>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <!-- 内容区域 -->
-            <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
-                
-                <!-- 左侧：添加面板 -->
-                <div class="w-full md:w-1/3 border-r border-base-200 p-4 flex flex-col gap-4 bg-base-100">
+            <!-- 三栏工作区：添加 / 合集 / 已启用 -->
+            <div class="mt-4 grid min-h-0 flex-1 grid-cols-1 overflow-y-auto border border-base-200 md:grid-cols-[minmax(16rem,0.8fr)_minmax(20rem,1.15fr)_minmax(20rem,1.25fr)] md:overflow-hidden">
+                <!-- 左侧：单模组、本地库和 API Key -->
+                <section class="flex min-h-[36rem] flex-col gap-4 border-b border-base-200 bg-base-100 p-4 md:min-h-0 md:border-b-0 md:border-r">
                     <div class="form-control">
-                        <label class="label"><span class="label-text font-bold" x-text="i18n.mod_add_workshop_label"></span></label>
-                        <textarea 
-                            class="textarea textarea-bordered h-32 font-mono text-sm" 
+                        <label class="label pb-2">
+                            <span class="label-text text-sm font-bold" x-text="i18n.mod_add_workshop_label"></span>
+                        </label>
+                        <textarea
+                            class="textarea textarea-bordered h-24 resize-none font-mono text-sm md:h-28"
                             :placeholder="i18n.mod_add_placeholder"
                             x-model="modInput"
                         ></textarea>
                     </div>
-                    <button class="btn btn-primary w-full" @click="lookupAndAddMods()" :disabled="modLoading">
-                        <span x-show="modLoading" class="loading loading-spinner"></span>
+                    <button class="btn btn-primary btn-sm w-full" @click="lookupAndAddMods()" :disabled="modLoading">
+                        <span x-show="modLoading" class="loading loading-spinner loading-sm"></span>
                         <span x-show="!modLoading" x-text="i18n.mod_btn_analyze"></span>
                     </button>
 
-                    <!-- 合集展开 -->
-                    <div class="divider" x-text="i18n.mod_collection_label"></div>
-
-                    <!-- 已添加的合集列表 -->
-                    <template x-if="addedCollections.length > 0">
-                        <div class="border border-base-200 rounded-box p-2 mb-1">
-                            <div class="text-[10px] font-bold text-base-content/50 mb-1 px-1" x-text="i18n.mod_collection_existing"></div>
-                            <template x-for="(col, idx) in addedCollections" :key="col.id">
-                                <div class="flex items-center gap-1 p-1 rounded hover:bg-base-200 group">
-                                    <button class="btn btn-xs btn-ghost btn-square" @click="reexpandCollection(col.id)" :title="i18n.mod_collection_reexpand">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                                    </button>
-                                    <span class="text-xs font-mono truncate flex-1" x-text="col.name + ' (' + col.id + ')'"></span>
-                                    <button class="btn btn-xs btn-ghost text-error opacity-0 group-hover:opacity-100" @click="removeCollectionRecord(idx)" x-text="'✕'"></button>
-                                </div>
-                            </template>
+                    <!-- Steam API Key 固定在滚动列表上方，避免被合集结果挤出视口 -->
+                    <div class="border-y border-base-200 py-3">
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                            <label class="text-xs font-bold" x-text="i18n.mod_settings_key_label"></label>
+                            <span class="badge badge-success badge-outline badge-xs" x-show="settingsKeyConfigured" x-text="i18n.mod_settings_configured || 'Configured'"></span>
                         </div>
-                    </template>
-
-                    <div class="form-control">
-                        <input type="text" class="input input-bordered input-sm w-full font-mono"
-                            :placeholder="i18n.mod_collection_placeholder"
-                            x-model="collectionInput" />
-                    </div>
-                    <button class="btn btn-outline btn-sm w-full" @click="expandCollection()" :disabled="collectionLoading">
-                        <span x-show="collectionLoading" class="loading loading-spinner loading-sm"></span>
-                        <span x-show="!collectionLoading" x-text="i18n.mod_btn_expand"></span>
-                    </button>
-                    <template x-if="collectionItems.length > 0">
-                        <div class="border border-base-200 rounded-box p-2 max-h-48 overflow-y-auto">
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="flex items-center gap-1 text-xs cursor-pointer">
-                                    <input type="checkbox" class="checkbox checkbox-xs" @change="toggleSelectAll()" x-model="collectionSelectAll" />
-                                    <span x-text="i18n.mod_collection_select_all"></span>
-                                </label>
-                                <button class="btn btn-xs btn-primary" @click="addSelectedCollectionMods()" x-text="i18n.mod_collection_add_selected"></button>
-                            </div>
-                            <template x-for="(mod, idx) in collectionItems" :key="mod.workshop_id">
-                                <label class="flex items-center gap-2 p-1 hover:bg-base-200 rounded cursor-pointer">
-                                    <input type="checkbox" class="checkbox checkbox-xs" :checked="collectionChecked[idx]" @change="collectionChecked[idx] = !collectionChecked[idx]" />
-                                    <div class="truncate flex-1">
-                                        <div class="text-xs truncate" x-text="mod.name"></div>
-                                        <div class="text-[10px] text-base-content/60 font-mono" x-text="'W:' + mod.workshop_id + ' M:' + mod.mod_id"></div>
-                                    </div>
-                                </label>
-                            </template>
-                        </div>
-                    </template>
-                    <div x-show="collectionExpandMsg" class="text-xs text-warning px-1" x-text="collectionExpandMsg"></div>
-
-                    <!-- 面板设置(仅 Steam API Key，用于合集解析) -->
-                    <div class="divider" x-text="i18n.mod_settings_title"></div>
-                    <div class="form-control">
-                        <label class="label"><span class="label-text text-xs" x-text="i18n.mod_settings_key_label"></span></label>
                         <input type="password" class="input input-bordered input-sm w-full font-mono"
                             :placeholder="i18n.mod_settings_key_placeholder"
                             x-model="settingsKey" />
-                        <span class="text-[10px] text-success mt-1" x-show="settingsKeyMasked" x-text="'已保存: ' + settingsKeyMasked"></span>
-                        <span class="text-[10px] text-base-content/50" x-show="!settingsKeyMasked && settingsKeyConfigured" x-text="'(已配置)'"></span>
+                        <div class="mt-1 min-h-4 truncate text-[10px] text-success" x-show="settingsKeyMasked" x-text="(i18n.mod_settings_saved_key || 'Saved') + ': ' + settingsKeyMasked"></div>
+                        <button class="btn btn-ghost btn-sm mt-2 w-full" @click="saveSettings()" :disabled="!settingsKey.trim()" x-text="i18n.mod_settings_save"></button>
                     </div>
-                    <button class="btn btn-ghost btn-sm w-full mt-1" @click="saveSettings()" x-text="i18n.mod_settings_save"></button>
-                    
-                    <div class="divider" x-text="i18n.mod_divider_or"></div>
-                    
-                    <!-- 本地已下载列表 -->
-                    <div class="flex-1 overflow-y-auto border border-base-200 rounded-box p-2">
-                        <div class="text-xs font-bold mb-2 text-base-content/50 px-2" x-text="i18n.mod_local_list_title"></div>
-                        <template x-for="mod in availableMods" :key="mod.mod_id">
-                            <div class="flex justify-between items-center p-2 hover:bg-base-200 rounded cursor-pointer group" @click="addFromLocal(mod)">
-                                <div class="truncate flex-1">
-                                    <div class="font-bold text-xs truncate" x-text="mod.name"></div>
-                                    <div class="text-[10px] text-base-content/60" x-text="mod.mod_id"></div>
-                                </div>
-                                <button class="btn btn-xs btn-ghost text-primary opacity-0 group-hover:opacity-100">+</button>
-                            </div>
-                        </template>
-                        <div x-show="availableMods.length === 0" class="text-center text-xs p-4 text-base-content/50" x-text="i18n.mod_local_list_empty"></div>
-                    </div>
-                </div>
 
-                <!-- 右侧：已启用列表 -->
-                <div class="flex-1 p-4 flex flex-col bg-base-200/30">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="font-bold text-sm">
-                            <span x-text="i18n.mod_active_list_title"></span> 
-                            (<span x-text="activeMods.length"></span>)
-                        </span>
-                        <button class="btn btn-xs btn-ghost text-error" @click="activeMods = []" x-show="activeMods.length > 0" x-text="i18n.mod_btn_clear_all"></button>
+                    <!-- 本地已下载列表 -->
+                    <div class="flex min-h-48 flex-1 flex-col overflow-hidden">
+                        <div class="mb-2 flex items-center justify-between px-1">
+                            <span class="text-xs font-bold text-base-content/60" x-text="i18n.mod_local_list_title"></span>
+                            <span class="badge badge-ghost badge-sm font-mono" x-text="availableMods.length"></span>
+                        </div>
+                        <div class="min-h-0 flex-1 overflow-y-auto border border-base-200 p-1.5">
+                            <template x-for="mod in availableMods" :key="mod.mod_id">
+                                <button type="button" class="group flex w-full items-center gap-2 rounded-md p-2 text-left hover:bg-base-200" @click="addFromLocal(mod)">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="truncate text-xs font-bold" x-text="mod.name"></div>
+                                        <div class="truncate font-mono text-[10px] text-base-content/60" x-text="mod.mod_id"></div>
+                                    </div>
+                                    <span class="text-primary opacity-0 transition-opacity group-hover:opacity-100">＋</span>
+                                </button>
+                            </template>
+                            <div x-show="availableMods.length === 0" class="flex h-full min-h-28 items-center justify-center px-4 text-center text-xs text-base-content/40" x-text="i18n.mod_local_list_empty"></div>
+                        </div>
                     </div>
-                    
-                    <div class="flex-1 overflow-y-auto space-y-2 pr-2">
-                        <template x-for="(mod, index) in activeMods" :key="index">
-                            <div class="card card-compact bg-base-100 shadow-sm border border-base-200 group">
-                                <div class="card-body flex-row items-center gap-3 p-3">
-                                    <div class="badge badge-neutral text-xs font-mono h-6 w-6 shrink-0" x-text="index + 1"></div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="font-bold text-sm truncate text-primary" x-text="mod.name || i18n.mod_unknown_name"></div>
-                                        <div class="flex gap-2 text-[10px] text-base-content/60 font-mono">
-                                            <span class="bg-base-200 px-1 rounded">W: <span x-text="mod.workshop_id"></span></span>
-                                            <span class="bg-base-200 px-1 rounded">M: <span x-text="mod.mod_id"></span></span>
+                </section>
+
+                <!-- 中间：合集专用工作区 -->
+                <section class="flex min-h-[32rem] flex-col gap-3 border-b border-base-200 bg-base-200/20 p-4 md:min-h-0 md:border-b-0 md:border-r">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <div class="text-sm font-bold" x-text="i18n.mod_collection_label"></div>
+                            <div class="text-[11px] text-base-content/50" x-text="i18n.mod_collection_empty"></div>
+                        </div>
+                        <span class="badge badge-primary badge-outline badge-sm whitespace-nowrap" x-show="collectionItems.length > 0" x-text="collectionItems.length"></span>
+                    </div>
+
+                    <div class="join w-full">
+                        <input type="text" class="input input-bordered input-sm join-item min-w-0 flex-1 font-mono"
+                            :placeholder="i18n.mod_collection_placeholder"
+                            x-model="collectionInput"
+                            @keydown.enter.prevent="expandCollection()" />
+                        <button class="btn btn-primary btn-sm join-item" @click="expandCollection()" :disabled="collectionLoading">
+                            <span x-show="collectionLoading" class="loading loading-spinner loading-sm"></span>
+                            <span x-show="!collectionLoading" x-text="i18n.mod_btn_expand"></span>
+                        </button>
+                    </div>
+
+                    <!-- 已解析的合集快捷入口 -->
+                    <template x-if="addedCollections.length > 0">
+                        <div class="border-y border-base-200 py-2">
+                            <div class="mb-1 px-1 text-[10px] font-bold uppercase text-base-content/50" x-text="i18n.mod_collection_existing"></div>
+                            <div class="flex max-h-20 flex-col gap-0.5 overflow-y-auto">
+                                <template x-for="(col, idx) in addedCollections" :key="col.id">
+                                    <div class="group flex items-center gap-1 rounded-md px-1 py-0.5 hover:bg-base-200">
+                                        <button class="btn btn-xs btn-ghost btn-square" @click="reexpandCollection(col.id)" :title="i18n.mod_collection_reexpand">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                        </button>
+                                        <span class="min-w-0 flex-1 truncate text-xs" x-text="col.name"></span>
+                                        <span class="shrink-0 font-mono text-[10px] text-base-content/45" x-text="col.id"></span>
+                                        <button class="btn btn-xs btn-ghost btn-square text-error opacity-0 group-hover:opacity-100" @click="removeCollectionRecord(idx)" :title="i18n.btn_cancel">✕</button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- 合集结果占满中栏剩余高度 -->
+                    <div class="flex min-h-64 flex-1 flex-col overflow-hidden border border-base-200 bg-base-100" data-testid="collection-results">
+                        <div class="flex min-h-11 items-center justify-between gap-2 border-b border-base-200 px-3 py-2">
+                            <label class="flex cursor-pointer items-center gap-2 text-xs">
+                                <input type="checkbox" class="checkbox checkbox-sm" :checked="collectionSelectAll" @change="setCollectionSelection($event.target.checked)" :disabled="collectionItems.length === 0" />
+                                <span x-text="i18n.mod_collection_select_all"></span>
+                            </label>
+                            <button class="btn btn-ghost btn-xs" @click="addSelectedCollectionMods()" :disabled="collectionChecked.filter(Boolean).length === 0">
+                                <span x-text="i18n.mod_collection_add_selected"></span>
+                                <span class="badge badge-sm font-mono" x-text="collectionChecked.filter(Boolean).length"></span>
+                            </button>
+                        </div>
+                        <div class="min-h-0 flex-1 overflow-y-auto p-1.5">
+                            <template x-for="(mod, idx) in collectionItems" :key="mod.workshop_id">
+                                <label class="group flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-base-200">
+                                    <input type="checkbox" class="checkbox checkbox-sm shrink-0" :checked="collectionChecked[idx]" @change="setCollectionItemSelection(mod, idx, $event.target.checked)" />
+                                    <div class="min-w-0 flex-1">
+                                        <div class="truncate text-xs font-semibold" x-text="mod.name"></div>
+                                        <div class="mt-0.5 flex flex-wrap gap-x-2 font-mono text-[10px] text-base-content/55">
+                                            <span x-text="'W: ' + mod.workshop_id"></span>
+                                            <span x-text="'M: ' + mod.mod_id"></span>
                                         </div>
                                     </div>
-                                    <!-- 按钮组 -->
-                                    <div class="flex gap-1 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button class="btn btn-xs btn-square btn-ghost" @click="moveMod(index, -1)" :disabled="index === 0">▲</button>
-                                        <button class="btn btn-xs btn-square btn-ghost" @click="moveMod(index, 1)" :disabled="index === activeMods.length - 1">▼</button>
-                                        <button class="btn btn-xs btn-square btn-ghost text-error" @click="removeMod(index)">✕</button>
+                                    <span class="badge badge-accent badge-outline badge-xs shrink-0" x-text="i18n.mod_collection_badge || 'Collection'"></span>
+                                </label>
+                            </template>
+                            <div x-show="collectionItems.length === 0 && !collectionLoading" class="flex h-full min-h-48 flex-col items-center justify-center gap-2 px-8 text-center text-base-content/35">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 9.75h16.5m-15-4.5h13.5A1.5 1.5 0 0120.25 6.75v10.5a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5V6.75a1.5 1.5 0 011.5-1.5z" /></svg>
+                                <span class="text-xs" x-text="i18n.mod_collection_empty"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div x-show="collectionExpandMsg" class="rounded-md bg-warning/10 px-3 py-2 text-xs text-warning" x-text="collectionExpandMsg"></div>
+                </section>
+
+                <!-- 右侧：已启用列表 -->
+                <section class="flex min-h-[32rem] flex-col bg-base-100 p-4 md:min-h-0">
+                    <div class="mb-3 flex min-h-8 items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold" x-text="i18n.mod_active_list_title"></span>
+                            <span class="badge badge-neutral badge-sm font-mono" x-text="activeMods.length"></span>
+                        </div>
+                        <button class="btn btn-xs btn-ghost text-error" @click="clearActiveMods()" x-show="activeMods.length > 0" x-text="i18n.mod_btn_clear_all"></button>
+                    </div>
+
+                    <div class="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1" data-testid="active-mods">
+                        <template x-for="(mod, index) in activeMods" :key="mod.mod_id + '-' + mod.workshop_id">
+                            <div class="group border border-base-200 bg-base-100 shadow-sm">
+                                <div class="flex items-center gap-3 p-3">
+                                    <div class="badge badge-neutral h-6 w-6 shrink-0 font-mono text-xs" x-text="index + 1"></div>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="flex min-w-0 items-center justify-between gap-2">
+                                            <div class="truncate text-sm font-bold text-primary" x-text="mod.name || i18n.mod_unknown_name"></div>
+                                            <span x-show="mod.collection_id" class="badge badge-accent badge-outline badge-sm shrink-0" :title="mod.collection_name + ' (' + mod.collection_id + ')'" x-text="i18n.mod_collection_badge || 'Collection'"></span>
+                                        </div>
+                                        <div class="mt-1 flex flex-wrap gap-1.5 font-mono text-[10px] text-base-content/60">
+                                            <span class="bg-base-200 px-1.5 py-0.5">W: <span x-text="mod.workshop_id"></span></span>
+                                            <span class="bg-base-200 px-1.5 py-0.5">M: <span x-text="mod.mod_id"></span></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex shrink-0 gap-0.5 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
+                                        <button class="btn btn-xs btn-square btn-ghost" @click="moveMod(index, -1)" :disabled="index === 0" title="Move up">▲</button>
+                                        <button class="btn btn-xs btn-square btn-ghost" @click="moveMod(index, 1)" :disabled="index === activeMods.length - 1" title="Move down">▼</button>
+                                        <button class="btn btn-xs btn-square btn-ghost text-error" @click="removeMod(index)" :title="i18n.btn_cancel">✕</button>
                                     </div>
                                 </div>
                             </div>
                         </template>
-                        
-                        <div x-show="activeMods.length === 0" class="flex flex-col items-center justify-center h-full text-base-content/30 gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+
+                        <div x-show="activeMods.length === 0" class="flex h-full min-h-64 flex-col items-center justify-center gap-2 text-base-content/30">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2.25 0 012 2v2M7 7h10" /></svg>
                             <p class="text-sm" x-text="i18n.mod_active_empty"></p>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
 
-            <!-- 底部栏 -->
-            <div class="p-4 border-t border-base-200 flex justify-end gap-2 bg-base-100">
-                <form method="dialog">
-                    <button class="btn" x-text="i18n.btn_cancel"></button>
-                </form>
-                <button class="btn btn-primary px-8" @click="saveModsToConfig()">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
-                    <span x-text="i18n.mod_btn_apply"></span>
+            <!-- 独立页面保存操作 -->
+            <div class="mt-4 flex flex-col-reverse justify-end gap-2 sm:hidden">
+                <button class="btn btn-sm border-base-300 bg-base-200 text-base-content hover:bg-base-300 sm:px-6" @click="saveModsConfig(false)" :disabled="modLoading || !modsLoaded">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M13 6l6 6-6 6" /></svg>
+                    <span x-text="i18n.btn_save"></span>
+                </button>
+                <button class="btn btn-primary btn-sm sm:px-6" @click="saveModsConfig(true)" :disabled="modLoading || !modsLoaded">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    <span x-text="i18n.btn_save_restart"></span>
                 </button>
             </div>
         </div>
-    </dialog>
 {{end}}

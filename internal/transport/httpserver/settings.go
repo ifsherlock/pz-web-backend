@@ -2,8 +2,11 @@ package httpserver
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"pz-web-backend/internal/infra/fs"
 )
@@ -12,11 +15,24 @@ import (
 // 保存在挂载卷(容器内 /opt/pz-web-backend/panel_settings.json)，
 // 这样不重建镜像也能修改配置，start-pz.sh 也可读取内存设置。
 type PanelSettings struct {
-	SteamAPIKey      string `json:"steam_api_key"`
-	MemoryLimit      string `json:"memory_limit"` // 例: 3g
+	SteamAPIKey string `json:"steam_api_key"`
+	MemoryLimit string `json:"memory_limit"` // 例: 3g
 }
 
 const panelSettingsFilename = "panel_settings.json"
+
+var memoryLimitPattern = regexp.MustCompile(`^[1-9][0-9]*[mMgG]$`)
+
+func normalizeMemoryLimit(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "", nil
+	}
+	if !memoryLimitPattern.MatchString(value) {
+		return "", fmt.Errorf("memory limit must use a positive integer followed by m or g, for example 3072m or 4g")
+	}
+	return strings.ToLower(value), nil
+}
 
 // settingsStore 负责读写面板设置文件。
 type settingsStore struct {

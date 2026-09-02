@@ -1,8 +1,6 @@
 {{define "app_body"}}
     {{template "partials/navbar" .}}
 
-    {{template "partials/desktop_tabs" .}}
-
     <!-- 主内容区域 (与顶部横条同宽，苹果式柔和卡片) -->
     <div class="flex-1 main-card relative mb-4 p-4 md:p-6 md:container md:mx-auto">
         
@@ -10,9 +8,24 @@
         <div x-show="loading" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm" style="display: none;">
             <span class="loading loading-spinner loading-lg text-primary"></span>
         </div>
+
+        <div
+            x-cloak
+            x-show="configTooltip.show"
+            x-ref="configTooltip"
+            class="config-floating-tooltip"
+            :style="{ left: configTooltip.left + 'px', top: configTooltip.top + 'px', maxWidth: configTooltip.maxWidth + 'px' }"
+            role="tooltip"
+            x-transition.opacity.duration.100ms
+        >
+            <div class="config-tooltip-key" x-text="configTooltip.key"></div>
+            <div x-text="configTooltip.text"></div>
+        </div>
         {{template "modules/server" .}}
 
         {{template "modules/sandbox" .}}
+
+        {{template "modules/mods" .}}
 
         {{template "modules/monitor" .}}
     </div>
@@ -20,6 +33,4 @@
     {{template "partials/mobile_nav" .}}
 
     {{template "partials/toast" .}}
-
-    {{template "modules/mod_modal" .}}
 {{end}}

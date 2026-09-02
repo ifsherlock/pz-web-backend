@@ -43,10 +43,15 @@ func (a App) handleSaveSettings(c *gin.Context) {
 
 	next := a.Settings.Load()
 	if req.SteamAPIKey != nil {
-		next.SteamAPIKey = *req.SteamAPIKey
+		next.SteamAPIKey = strings.TrimSpace(*req.SteamAPIKey)
 	}
 	if req.MemoryLimit != nil {
-		next.MemoryLimit = *req.MemoryLimit
+		memoryLimit, err := normalizeMemoryLimit(*req.MemoryLimit)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		next.MemoryLimit = memoryLimit
 	}
 
 	if err := a.Settings.Save(next); err != nil {
@@ -62,8 +67,8 @@ func (a App) handleSaveSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":                 "ok",
-		"steam_api_key_masked":   maskKey(next.SteamAPIKey),
-		"memory_limit":           next.MemoryLimit,
+		"status":               "ok",
+		"steam_api_key_masked": maskKey(next.SteamAPIKey),
+		"memory_limit":         next.MemoryLimit,
 	})
 }

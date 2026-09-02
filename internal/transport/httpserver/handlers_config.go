@@ -71,7 +71,12 @@ func (a App) handleSaveConfig(c *gin.Context) {
 		filtered := make([]config.Item, 0, len(req.Items))
 		for _, item := range req.Items {
 			if item.Key == MemoryLimitKey {
-				settings.MemoryLimit = item.Value
+				memoryLimit, err := normalizeMemoryLimit(item.Value)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
+				}
+				settings.MemoryLimit = memoryLimit
 				continue
 			}
 			filtered = append(filtered, item)

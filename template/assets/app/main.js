@@ -15,6 +15,7 @@ function app() {
                 stats: { cpu_percent: 0, mem_used_mb: 0, mem_total_mb: 0, mem_percent: 0, uptime_sec: 0 },
                 statsTimer: null,
                 toast: { show: false, message: '', type: 'success' },
+                configTooltip: { show: false, key: '', text: '', left: 12, top: 12, maxWidth: 420 },
                 modInput: '',
                 modLoading: false,
                 availableMods: [], // 本地库
@@ -26,12 +27,13 @@ function app() {
                 collectionChecked: [],
                 collectionSelectAll: false,
                 collectionExpandMsg: '',
+                currentCollection: { id: '', name: '' },
                 addedCollections: [], // 已添加的合集列表 {id,name}
                 // 面板设置
                 settingsKey: '',
                 settingsKeyConfigured: false,
                 settingsKeyMasked: '',
-                settingsMemory: '',
+                modsLoaded: false,
                 logConnected: false,
 
 
@@ -50,6 +52,9 @@ function app() {
                             this.startLogStream();
                         } else {
                             this.stopLogStream(); // 离开页面时断开连接，节省资源
+                        }
+                        if (val === 'mods') {
+                            this.loadModManager();
                         }
                     });
                 },
@@ -155,7 +160,11 @@ function app() {
 
                         if (type === 'server') {
                             this.serverConfig = data.items; // 保存原始数组用于提交
-                            this.serverSections = grouped;
+                            this.serverSections = Object.fromEntries(
+                                Object.entries(grouped).filter(([, items]) =>
+                                    items.some(item => item.key !== 'Mods' && item.key !== 'WorkshopItems')
+                                )
+                            );
                         } else {
                             this.sandboxConfig = data.items;
                             this.sandboxSections = grouped;
@@ -167,47 +176,41 @@ function app() {
                     }
                 },
 
-                // 打开管理器
-                async openModManager() {
+                // 加载独立模组页面。首次进入时加载，手动刷新可强制重读服务器配置。
+                async loadModManager(force = false) {
+                    if (this.modLoading || (this.modsLoaded && !force)) return;
                     this.modLoading = true;
-                    const availableModsResp = await fetch(`/api/mods`);
-                    this.availableMods = await availableModsResp.json()
-                    // 加载面板设置(API Key / 内存)
-                    this.loadSettings();
-                    // 从 serverConfig 解析当前配置
-                    const modsItem = this.serverConfig.find(i => i.key === 'Mods');
-                    const wsItem = this.serverConfig.find(i => i.key === 'WorkshopItems');
-                    
-                    const currentModIds = (modsItem ? modsItem.value : "")
-                    .split(';')
-                    .map(s => s.trim().replace(/^\\/, '')) // 去除开头的 \
-                    .filter(Boolean);
-                    const currentWsIds = (wsItem ? wsItem.value : "").split(';').filter(Boolean);
-                    // 如果没有任何工坊物品，直接清空列表并打开
-                    if (currentWsIds.length === 0) {
-                        this.modLoading = false;
+                    try {
+                        if (this.serverConfig.length === 0) {
+                            await this.fetchConfig('server');
+                        }
+                        const availableModsResp = await fetch(`/api/mods`);
+                        if (!availableModsResp.ok) throw new Error('failed to load local mods');
+                        this.availableMods = await availableModsResp.json();
+                        await this.loadSettings();
+
+                        const modsItem = this.serverConfig.find(i => i.key === 'Mods');
+                        const wsItem = this.serverConfig.find(i => i.key === 'WorkshopItems');
+                        const currentModIds = (modsItem ? modsItem.value : "")
+                            .split(';')
+                            .map(s => s.trim().replace(/^\\/, ''))
+                            .filter(Boolean);
+                        const currentWsIds = (wsItem ? wsItem.value : "").split(';').filter(Boolean);
+
                         this.activeMods = [];
-                        document.getElementById('mod_modal').showModal();
-                        return;
-                    }
-                    document.getElementById('mod_modal').showModal();
-                    const res = await fetch(`/api/mods/lookup?ids=${currentWsIds.join(',')}`);
-                    const lookupData = await res.json();
-                    this.modLoading = false;
-                    this.activeMods = [];
-                    currentWsIds.forEach(wid => {
-                        const info = lookupData.find(d => d.workshop_id === wid);
-                        if (info) {
-                            // 一个 Workshop Item 可能包含多个 Mod ID
-                            // 需要判断 currentModIds 里包含 info.mod_id 里的哪些
-                            // 获取该工坊物品包含的所有潜在 ModID (后端返回的是逗号分隔字符串 "id1,id2")
-                            const potentialModIds = info.mod_id.split(',').map(s => s.trim());
-                            
-                            // 在当前启用的 Mods 里找，有哪些是属于这个 Workshop 的
-                            const enabledSubMods = potentialModIds.filter(pmid => currentModIds.includes(pmid));
-                            
-                            if (enabledSubMods.length > 0) {
-                                // 如果找到了匹配的，添加进列表
+                        if (currentWsIds.length === 0) {
+                            this.modsLoaded = true;
+                            return;
+                        }
+
+                        const res = await fetch(`/api/mods/lookup?ids=${currentWsIds.join(',')}`);
+                        if (!res.ok) throw new Error('failed to resolve enabled mods');
+                        const lookupData = await res.json();
+                        currentWsIds.forEach(wid => {
+                            const info = lookupData.find(d => d.workshop_id === wid);
+                            if (info) {
+                                const potentialModIds = info.mod_id.split(',').map(s => s.trim());
+                                const enabledSubMods = potentialModIds.filter(pmid => currentModIds.includes(pmid));
                                 enabledSubMods.forEach(mid => {
                                     this.activeMods.push({
                                         name: info.name + (enabledSubMods.length > 1 ? ` (${mid})` : ''),
@@ -215,17 +218,20 @@ function app() {
                                         mod_id: mid
                                     });
                                 });
+                            } else {
+                                this.activeMods.push({
+                                    name: `Unknown Item (${wid})`,
+                                    workshop_id: wid,
+                                    mod_id: '?'
+                                });
                             }
-                        } else {
-                            // 没查到信息 (网络错误或ID不存在)，显示 ID
-                            this.activeMods.push({
-                                name: `Unknown Item (${wid})`,
-                                workshop_id: wid,
-                                mod_id: '?'
-                            });
-                        }
-                    });
-                    document.getElementById('mod_modal').showModal();
+                        });
+                        this.modsLoaded = true;
+                    } catch (e) {
+                        this.showToast((this.i18n.msg_config_load_fail || 'Load failed') + ': ' + e.message, 'error');
+                    } finally {
+                        this.modLoading = false;
+                    }
                 },
 
                 // 解析输入框并添加 (支持纯数字 ID 和 Steam 链接)
@@ -257,9 +263,13 @@ function app() {
                 },
 
                 // 添加单个 Mod 项目 (处理多 ModID 情况)
-                addModItem(item) {
+                addModItem(item, collection = null) {
                     // 检查 ModID 是否存在
                     let mid = item.mod_id;
+                    const collectionMeta = collection ? {
+                        collection_id: collection.id,
+                        collection_name: collection.name
+                    } : {};
                     
                     // 如果包含多个 ID (例如 "ID1,ID2")
                     if (mid.includes(',')) {
@@ -269,7 +279,8 @@ function app() {
                             this.pushToActive({
                                 name: item.name + ` (${subId})`, // 区分名字
                                 workshop_id: item.workshop_id,
-                                mod_id: subId.trim()
+                                mod_id: subId.trim(),
+                                ...collectionMeta
                             });
                         });
                         return;
@@ -285,14 +296,16 @@ function app() {
                     this.pushToActive({
                         name: item.name,
                         workshop_id: item.workshop_id,
-                        mod_id: mid
+                        mod_id: mid,
+                        ...collectionMeta
                     });
                 },
                 //添加到列表并去重
                 pushToActive(modObj) {
                     // 检查是否已存在 (根据 ModID)
-                    if (this.activeMods.some(m => m.mod_id === modObj.mod_id)) return;
+                    if (this.activeMods.some(m => m.mod_id === modObj.mod_id)) return false;
                     this.activeMods.push(modObj);
+                    return true;
                 },
                 // 从本地库添加
                 addFromLocal(mod) {
@@ -302,6 +315,12 @@ function app() {
                 // 移除
                 removeMod(index) {
                     this.activeMods.splice(index, 1);
+                    this.syncCollectionChecked();
+                },
+
+                clearActiveMods() {
+                    this.activeMods = [];
+                    this.syncCollectionChecked();
                 },
 
                 // 排序
@@ -314,8 +333,8 @@ function app() {
                     this.activeMods[newIndex] = temp;
                 },
 
-                // 保存回 Server Config
-                saveModsToConfig() {
+                // 将页面状态同步回服务器配置中的 Mods / WorkshopItems 字段。
+                syncModsToServerConfig() {
                     // 提取 Mod IDs (分号分隔)
                     const modsStr = this.activeMods
                     .map(m => `\\${m.mod_id}`) // 加反斜杠，配置是那么写的。
@@ -333,8 +352,16 @@ function app() {
                     if (modsItem) modsItem.value = modsStr;
                     if (wsItem) wsItem.value = wsStr;
 
-                    document.getElementById('mod_modal').close();
+                },
+
+                saveModsToConfig() {
+                    this.syncModsToServerConfig();
                     this.showToast(this.i18n.msg_mod_list_updated, 'success');
+                },
+
+                async saveModsConfig(restart) {
+                    this.syncModsToServerConfig();
+                    await this.saveConfig('server', restart);
                 },
 
                 // 展开合集：输入合集 ID 或 Steam 链接，显示全部子模组供勾选
@@ -359,8 +386,12 @@ function app() {
                             }
                             return;
                         }
+                        this.currentCollection = {
+                            id: data.collection_id || id,
+                            name: data.name || id
+                        };
                         this.collectionItems = data.children || [];
-                        this.collectionChecked = this.collectionItems.map(() => false);
+                        this.syncCollectionChecked();
                         // 记录已添加的合集（避免重复）
                         if (!this.addedCollections.some(c => c.id === id)) {
                             this.addedCollections.push({ id: id, name: data.name || id });
@@ -383,20 +414,45 @@ function app() {
                     this.addedCollections.splice(idx, 1);
                 },
 
-                // 全选/取消全选
-                toggleSelectAll() {
-                    const allChecked = !this.collectionSelectAll;
-                    this.collectionChecked = this.collectionChecked.map(() => allChecked);
+                // 合集勾选会即时同步到右侧已启用列表。
+                setCollectionItemSelection(mod, idx, checked, updateSelectAll = true) {
+                    this.collectionChecked[idx] = checked;
+                    if (checked) {
+                        this.addModItem(mod, this.currentCollection);
+                    } else {
+                        this.activeMods = this.activeMods.filter(active => !(
+                            active.collection_id === this.currentCollection.id &&
+                            active.workshop_id === mod.workshop_id
+                        ));
+                    }
+                    if (updateSelectAll) {
+                        this.collectionSelectAll = this.collectionItems.length > 0 && this.collectionChecked.every(Boolean);
+                    }
+                },
+
+                setCollectionSelection(checked) {
+                    this.collectionItems.forEach((mod, idx) => {
+                        this.setCollectionItemSelection(mod, idx, checked, false);
+                    });
+                    this.collectionSelectAll = checked && this.collectionItems.length > 0;
+                },
+
+                syncCollectionChecked() {
+                    this.collectionChecked = this.collectionItems.map(mod => this.activeMods.some(active =>
+                        active.collection_id === this.currentCollection.id &&
+                        active.workshop_id === mod.workshop_id
+                    ));
+                    this.collectionSelectAll = this.collectionItems.length > 0 && this.collectionChecked.every(Boolean);
                 },
 
                 // 添加勾选的合集子模组到已启用列表
                 addSelectedCollectionMods() {
                     this.collectionItems.forEach((mod, idx) => {
                         if (this.collectionChecked[idx]) {
-                            this.addModItem(mod);
+                            this.addModItem(mod, this.currentCollection);
                         }
                     });
-                    this.collectionExpandMsg = this.i18n.mod_collection_add_selected;
+                    this.collectionExpandMsg = this.i18n.mod_collection_added_notice || this.i18n.mod_collection_add_selected;
                 },
 
                 // 加载面板设置(API Key / 内存)
@@ -407,7 +463,6 @@ function app() {
                         this.settingsKeyConfigured = !!data.steam_api_key_configured;
                         // 显示掩码 Key 让用户确认已存放(不显示完整 Key)
                         this.settingsKeyMasked = data.steam_api_key_masked || '';
-                        this.settingsMemory = data.memory_limit || '';
                     } catch (e) {
                         console.error('load settings failed', e);
                     }
@@ -415,19 +470,20 @@ function app() {
 
                 // 保存面板设置
                 async saveSettings() {
+                    const key = this.settingsKey.trim();
+                    if (!key) return;
                     try {
                         const res = await fetch(`/api/settings`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                                steam_api_key: this.settingsKey,
-                                memory_limit: this.settingsMemory
+                                steam_api_key: key
                             })
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || 'save failed');
                         // 成功: 记录掩码 Key, 清空输入框但保留"已配置"状态
-                        this.settingsKeyConfigured = true;
+                        this.settingsKeyConfigured = !!data.steam_api_key_masked;
                         this.settingsKeyMasked = data.steam_api_key_masked || '';
                         this.settingsKey = '';
                         this.showToast(this.i18n.mod_settings_saved || 'Settings saved', 'success');
@@ -532,6 +588,48 @@ function app() {
                     } else {
                         this.startLogStream();
                     }
+                },
+
+                showConfigTooltip(event, item) {
+                    const text = String(item.tooltip || '').trim();
+                    if (!text) return;
+
+                    const targetRect = event.currentTarget.getBoundingClientRect();
+                    const maxWidth = Math.max(220, Math.min(420, window.innerWidth - 24));
+                    this.configTooltip = {
+                        show: true,
+                        key: item.key,
+                        text,
+                        left: 12,
+                        top: 12,
+                        maxWidth
+                    };
+
+                    this.$nextTick(() => {
+                        window.requestAnimationFrame(() => {
+                            if (!this.configTooltip.show || !this.$refs.configTooltip) return;
+                            const tooltipRect = this.$refs.configTooltip.getBoundingClientRect();
+                            const viewportPadding = 12;
+                            const gap = 10;
+                            const centeredLeft = targetRect.left + (targetRect.width - tooltipRect.width) / 2;
+                            const maxLeft = window.innerWidth - tooltipRect.width - viewportPadding;
+                            let top = targetRect.top - tooltipRect.height - gap;
+
+                            if (top < viewportPadding) {
+                                top = targetRect.bottom + gap;
+                            }
+
+                            this.configTooltip.left = Math.max(viewportPadding, Math.min(centeredLeft, maxLeft));
+                            this.configTooltip.top = Math.max(
+                                viewportPadding,
+                                Math.min(top, window.innerHeight - tooltipRect.height - viewportPadding)
+                            );
+                        });
+                    });
+                },
+
+                hideConfigTooltip() {
+                    this.configTooltip.show = false;
                 },
 
                 showToast(msg, type = 'success') {

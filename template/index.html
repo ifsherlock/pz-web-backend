@@ -28,6 +28,7 @@
         .log-viewer::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
         /* 防止手机端点击高亮 */
         * { -webkit-tap-highlight-color: transparent; }
+        [x-cloak] { display: none !important; }
 
         /* ===== 苹果式柔和设计(纯CSS，不依赖Tailwind运行时) ===== */
         /* 说明：颜色全部使用 DaisyUI 主题变量(--b1/--bc等)，亮/暗主题自适应；
@@ -35,18 +36,18 @@
 
         /* 顶部导航栏: 与主内容区同色实底背景，风格统一 */
         .navbar {
-            background: var(--b1, #ffffff) !important;
-            border: 1px solid color-mix(in srgb, var(--bc, #888888) 12%, transparent) !important;
+            background: var(--fallback-b1, oklch(var(--b1) / 1)) !important;
+            border: 1px solid color-mix(in oklch, var(--fallback-bc, oklch(var(--bc) / 1)) 12%, transparent) !important;
             border-radius: 16px !important;
-            box-shadow: 0 4px 24px color-mix(in srgb, var(--bc, #000000) 10%, transparent) !important;
+            box-shadow: 0 4px 24px color-mix(in oklch, var(--fallback-bc, oklch(var(--bc) / 1)) 10%, transparent) !important;
         }
 
         /* 主内容卡片: 与顶部横条同色实底，大圆角 + 柔和阴影 */
         .main-card {
-            background: var(--b1, #ffffff) !important;
-            border: 1px solid color-mix(in srgb, var(--bc, #888888) 12%, transparent) !important;
+            background: var(--fallback-b1, oklch(var(--b1) / 1)) !important;
+            border: 1px solid color-mix(in oklch, var(--fallback-bc, oklch(var(--bc) / 1)) 12%, transparent) !important;
             border-radius: 20px !important;
-            box-shadow: 0 8px 30px color-mix(in srgb, var(--bc, #000000) 12%, transparent) !important;
+            box-shadow: 0 8px 30px color-mix(in oklch, var(--fallback-bc, oklch(var(--bc) / 1)) 12%, transparent) !important;
         }
 
         /* 语言选择框: 无边框、宽度足够显示"简体中文" */
@@ -57,17 +58,95 @@
             width: 7.5rem !important; /* 120px, 够放简体中文 */
             text-align: left !important;
             padding: 0 0.5rem !important;
-            color: var(--bc, inherit) !important;
+            color: var(--fallback-bc, oklch(var(--bc) / 1)) !important;
         }
         .lang-select:hover {
-            background: color-mix(in srgb, var(--bc, #888888) 12%, transparent) !important;
+            background: color-mix(in oklch, var(--fallback-bc, oklch(var(--bc) / 1)) 12%, transparent) !important;
         }
         .lang-select:focus {
             outline: none !important;
         }
+
+        .top-nav-tabs {
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0;
+            border: 0;
+            background: transparent;
+        }
+        .top-nav-tab {
+            position: relative;
+            height: 2.2rem;
+            padding: 0 0.9rem;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: color-mix(in oklch, var(--fallback-bc, oklch(var(--bc) / 1)) 68%, transparent);
+            font-size: 0.875rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+        }
+        .top-nav-tab:hover {
+            color: var(--fallback-bc, oklch(var(--bc) / 1));
+            background: color-mix(in oklch, var(--fallback-bc, oklch(var(--bc) / 1)) 7%, transparent);
+        }
+        .top-nav-tab.is-active {
+            color: var(--fallback-p, oklch(var(--p) / 1));
+            background: transparent;
+            box-shadow: none;
+        }
+        .top-nav-tab.is-active::after {
+            content: "";
+            position: absolute;
+            right: 0.9rem;
+            bottom: 0;
+            left: 0.9rem;
+            height: 2px;
+            border-radius: 2px;
+            background: var(--fallback-p, oklch(var(--p) / 1));
+        }
+        .top-nav-tab:focus-visible {
+            outline: 2px solid var(--fallback-p, oklch(var(--p) / 1));
+            outline-offset: 1px;
+        }
+
+        .config-key-label.has-tooltip {
+            cursor: help;
+            text-decoration: underline dotted;
+            text-underline-offset: 3px;
+        }
+        .config-key-label:focus-visible {
+            outline: 2px solid currentColor;
+            outline-offset: 2px;
+        }
+        .config-floating-tooltip {
+            position: fixed;
+            z-index: 100;
+            width: max-content;
+            padding: 0.7rem 0.8rem;
+            border: 1px solid color-mix(in oklch, var(--fallback-bc, oklch(var(--bc) / 1)) 18%, transparent);
+            border-radius: 6px;
+            background: var(--fallback-b1, oklch(var(--b1) / 1));
+            color: var(--fallback-bc, oklch(var(--bc) / 1));
+            box-shadow: 0 10px 28px color-mix(in oklch, var(--fallback-bc, oklch(var(--bc) / 1)) 18%, transparent);
+            font-size: 0.8rem;
+            line-height: 1.55;
+            letter-spacing: 0;
+            white-space: normal;
+            pointer-events: none;
+        }
+        .config-tooltip-key {
+            margin-bottom: 0.25rem;
+            color: var(--fallback-p, oklch(var(--p) / 1));
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
     </style>
 </head>
-<body class="bg-base-300 min-h-screen pb-20 md:pb-4 flex flex-col gap-4" x-data="app()" x-init="initI18n()">
+<body class="bg-base-300 min-h-screen pb-20 lg:pb-4 flex flex-col gap-4" x-data="app()" x-init="initI18n()" @scroll.window="hideConfigTooltip()" @resize.window="hideConfigTooltip()">
     {{template "app_body" .}}
 </body>
 </html>

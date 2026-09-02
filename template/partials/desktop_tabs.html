@@ -1,10 +1,9 @@
 {{define "partials/desktop_tabs"}}
-    <!-- 桌面端 Tabs (md以上显示) -->
-    <div class="hidden md:flex justify-center md:container md:mx-auto mt-2">
-        <div role="tablist" class="tabs tabs-lifted tabs-lg">
-            <a role="tab" class="tab" :class="currentTab === 'server' ? 'tab-active' : ''" @click="currentTab = 'server'" x-text="i18n.tab_server"></a>
-            <a role="tab" class="tab" :class="currentTab === 'sandbox' ? 'tab-active' : ''" @click="currentTab = 'sandbox'" x-text="i18n.tab_sandbox"></a>
-            <a role="tab" class="tab" :class="currentTab === 'monitor' ? 'tab-active' : ''" @click="currentTab = 'monitor'" x-text="i18n.tab_monitor"></a>
-        </div>
-    </div>
+    <!-- 桌面端主导航嵌入顶栏，形成一个安静的分段控件。 -->
+    <nav role="tablist" class="top-nav-tabs hidden lg:flex" aria-label="Primary navigation">
+        <button role="tab" class="top-nav-tab" :class="currentTab === 'server' ? 'is-active' : ''" :aria-selected="currentTab === 'server'" @click="currentTab = 'server'" x-text="i18n.tab_server"></button>
+        <button role="tab" class="top-nav-tab" :class="currentTab === 'sandbox' ? 'is-active' : ''" :aria-selected="currentTab === 'sandbox'" @click="currentTab = 'sandbox'" x-text="i18n.tab_sandbox"></button>
+        <button role="tab" class="top-nav-tab" :class="currentTab === 'mods' ? 'is-active' : ''" :aria-selected="currentTab === 'mods'" @click="currentTab = 'mods'" x-text="i18n.mods_workshop || 'Mods & Workshop'"></button>
+        <button role="tab" class="top-nav-tab" :class="currentTab === 'monitor' ? 'is-active' : ''" :aria-selected="currentTab === 'monitor'" @click="currentTab = 'monitor'" x-text="i18n.tab_monitor"></button>
+    </nav>
 {{end}}

@@ -14,7 +14,18 @@
                                 <div class="card card-bordered bg-base-100 shadow-sm hover:shadow-md transition-shadow">
                                     <div class="card-body p-3 gap-1">
                                         <div class="flex items-center gap-2">
-                                            <span class="badge badge-secondary badge-outline badge-sm font-mono shrink-0" x-text="item.key"></span>
+                                            <span
+                                                class="badge badge-secondary badge-outline badge-sm config-key-label shrink-0 font-mono"
+                                                :class="item.tooltip ? 'has-tooltip' : ''"
+                                                :tabindex="item.tooltip ? 0 : -1"
+                                                :aria-label="item.tooltip ? item.key + ': ' + item.tooltip : item.key"
+                                                @mouseenter="showConfigTooltip($event, item)"
+                                                @mouseleave="hideConfigTooltip()"
+                                                @focus="showConfigTooltip($event, item)"
+                                                @blur="hideConfigTooltip()"
+                                                @keydown.escape="hideConfigTooltip()"
+                                                x-text="item.key"
+                                            ></span>
                                         </div>
                                         <label class="label py-0">
                                             <span class="label-text text-sm text-base-content/80 select-text" x-text="item.label"></span>
@@ -29,7 +40,6 @@
                                         <template x-if="!item.options">
                                             <input type="text" class="input input-bordered input-sm w-full mt-1" x-model="item.value" />
                                         </template>
-                                        <div class="mt-1 text-[10px] text-base-content/50 leading-tight truncate" x-text="item.tooltip" :title="item.tooltip"></div>
                                     </div>
                                 </div>
                             </template>
