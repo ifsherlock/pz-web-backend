@@ -19,7 +19,7 @@ type PanelSettings struct {
 	MemoryLimit   string `json:"memory_limit"` // 例: 3g
 	GameBranch    string `json:"game_branch"`  // Steam 分支名，例如 public / 42.19
 	AdminUsername string `json:"admin_username"`
-	AdminPassword string `json:"admin_password"`
+	AdminPassword string `json:"admin_password"` // 管理员密码仅在面板持久化，不通过 GET 接口返回
 }
 
 const panelSettingsFilename = "panel_settings.json"
