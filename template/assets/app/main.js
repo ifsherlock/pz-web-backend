@@ -38,6 +38,11 @@ function app() {
                 logConnected: false,
                 backups: { enabled: false, interval_hours: 24, max_versions: 10, server_settings: [], backups: [] },
                 backupNote: '',
+                backupSettingsDirty: false,
+                backupSettingsRevision: 0,
+                backupSaveTimer: null,
+                backupLoadController: null,
+                backupLoadRequestId: 0,
 
 
                 init() {
@@ -267,34 +272,70 @@ function app() {
                 },
 
                 async loadBackups() {
+                    const requestId = ++this.backupLoadRequestId;
+                    if (this.backupLoadController) this.backupLoadController.abort();
+                    const controller = new AbortController();
+                    this.backupLoadController = controller;
                     try {
-                        const res = await fetch(`/api/backups?lang=${this.lang}`);
+                        const res = await fetch(`/api/backups?lang=${this.lang}`, { signal: controller.signal });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || '加载备份设置失败');
+                        // 用户正在编辑时，不能让较早的 GET 响应覆盖本地新值。
+                        if (requestId !== this.backupLoadRequestId || this.backupSettingsDirty) return;
                         this.backups = data;
                     } catch (e) {
+                        if (e.name === 'AbortError') return;
                         this.showToast(e.message, 'error');
+                    } finally {
+                        if (this.backupLoadController === controller) this.backupLoadController = null;
                     }
                 },
 
+                scheduleBackupSettingsSave() {
+                    this.backupSettingsDirty = true;
+                    this.backupSettingsRevision++;
+                    if (this.backupSaveTimer) clearTimeout(this.backupSaveTimer);
+                    this.backupSaveTimer = setTimeout(() => {
+                        this.backupSaveTimer = null;
+                        this.saveBackupSettings();
+                    }, 350);
+                },
+
                 async saveBackupSettings() {
+                    if (this.backupSaveTimer) {
+                        clearTimeout(this.backupSaveTimer);
+                        this.backupSaveTimer = null;
+                    }
+                    const revision = this.backupSettingsRevision;
                     this.loading = true;
                     try {
+                        const intervalHours = Number(this.backups.interval_hours);
+                        const maxVersions = Number(this.backups.max_versions);
+                        if (!Number.isInteger(intervalHours) || intervalHours < 1 || intervalHours > 168) {
+                            throw new Error('备份间隔必须是 1-168 之间的整数小时');
+                        }
+                        if (!Number.isInteger(maxVersions) || maxVersions < 1 || maxVersions > 100) {
+                            throw new Error('保留份数必须是 1-100 之间的整数');
+                        }
                         const res = await fetch('/api/backups/settings', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 enabled: !!this.backups.enabled,
-                                interval_hours: Number(this.backups.interval_hours),
-                                max_versions: Number(this.backups.max_versions),
+                                interval_hours: intervalHours,
+                                max_versions: maxVersions,
                                 server_settings: this.backups.server_settings
                             })
                         });
                         const data = await res.json();
                         if (!res.ok) throw new Error(data.error || '保存备份设置失败');
+                        // 只有请求开始后没有新的编辑时，才允许用服务端响应刷新表单。
+                        const latestEdit = revision === this.backupSettingsRevision;
+                        this.backupSettingsDirty = !latestEdit;
                         this.showToast('备份设置已保存', 'success');
-                        await this.loadBackups();
+                        if (latestEdit) await this.loadBackups();
                     } catch (e) {
+                        this.backupSettingsDirty = true;
                         this.showToast(e.message, 'error');
                     } finally {
                         this.loading = false;

@@ -35,22 +35,22 @@
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <h2 class="card-title text-base">存档备份</h2>
-                            <p class="text-xs text-base-content/60">备份存档、服务器配置、数据库和 Workshop 元数据，不包含游戏程序。</p>
+                            <p class="text-xs text-base-content/60">备份存档、服务器配置、数据库和 Workshop 元数据，不包含游戏程序。开关和参数修改后会自动保存。</p>
                         </div>
                         <label class="label cursor-pointer gap-2">
                             <span class="label-text">启用定时备份</span>
-                            <input type="checkbox" class="toggle toggle-primary" x-model="backups.enabled" />
+                            <input type="checkbox" class="toggle toggle-primary" x-model="backups.enabled" @change="scheduleBackupSettingsSave()" />
                         </label>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <label class="form-control">
                             <span class="label-text text-xs">备份间隔（小时）</span>
-                            <input type="number" min="1" max="168" class="input input-bordered input-sm" x-model.number="backups.interval_hours" />
+                            <input type="number" min="1" max="168" class="input input-bordered input-sm" x-model.number="backups.interval_hours" @change="scheduleBackupSettingsSave()" />
                         </label>
                         <label class="form-control">
                             <span class="label-text text-xs">保留份数上限</span>
-                            <input type="number" min="1" max="100" class="input input-bordered input-sm" x-model.number="backups.max_versions" />
+                            <input type="number" min="1" max="100" class="input input-bordered input-sm" x-model.number="backups.max_versions" @change="scheduleBackupSettingsSave()" />
                         </label>
                         <label class="form-control sm:col-span-2">
                             <span class="label-text text-xs">手动备份备注</span>
@@ -60,7 +60,7 @@
 
                     <div class="flex flex-wrap gap-2">
                         <button class="btn btn-primary btn-sm" @click="createBackup()">立即备份</button>
-                        <button class="btn btn-outline btn-sm" @click="saveBackupSettings()">保存备份设置</button>
+                        <button class="btn btn-outline btn-sm" @click="saveBackupSettings()">立即保存设置</button>
                     </div>
 
                     <div class="divider my-1">游戏内自动备份参数</div>
@@ -71,13 +71,13 @@
                                     <span class="badge badge-outline badge-sm font-mono w-fit config-key-label" :class="item.tooltip ? 'has-tooltip' : ''" @mouseenter="showConfigTooltip($event, item)" @mouseleave="hideConfigTooltip()" x-text="item.key"></span>
                                     <span class="text-sm" x-text="item.label"></span>
                                     <template x-if="item.options">
-                                        <select class="select select-bordered select-sm" x-model="item.value"><template x-for="opt in item.options" :key="opt.value"><option :value="opt.value" x-text="opt.label"></option></template></select>
+                                        <select class="select select-bordered select-sm" x-model="item.value" @change="scheduleBackupSettingsSave()"><template x-for="opt in item.options" :key="opt.value"><option :value="opt.value" x-text="opt.label"></option></template></select>
                                     </template>
                                     <template x-if="!item.options && (item.value === 'true' || item.value === 'false')">
-                                        <select class="select select-bordered select-sm" x-model="item.value"><option value="true">是</option><option value="false">否</option></select>
+                                        <select class="select select-bordered select-sm" x-model="item.value" @change="scheduleBackupSettingsSave()"><option value="true">是</option><option value="false">否</option></select>
                                     </template>
                                     <template x-if="!item.options && item.value !== 'true' && item.value !== 'false'">
-                                        <input class="input input-bordered input-sm" type="text" x-model="item.value" />
+                                        <input class="input input-bordered input-sm" type="text" x-model="item.value" @change="scheduleBackupSettingsSave()" />
                                     </template>
                                 </div>
                             </div>
