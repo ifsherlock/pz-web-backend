@@ -263,9 +263,58 @@ const (
 	SecCharXP      = "character_exp"
 	SecNature      = "nature_agriculture"
 	SecZombieLore  = "zombie_lore"
+	SecServer      = "server_settings"
+	SecNetwork     = "network_settings"
+	SecChat        = "chat_voice"
+	SecRules       = "gameplay_rules"
+	SecBackup      = "backup_settings"
+	SecSecurity    = "server_security"
 )
 
+var serverSectionOverrides = map[string]string{
+	// 基础信息与连接容量
+	"MaxPlayers": SecServer, "Public": SecServer, "PublicName": SecServer, "PublicDescription": SecServer,
+	"Open": SecServer, "PauseEmpty": SecServer, "ResetID": SecServer, "MaxAccountsPerUser": SecServer,
+	"AllowCoop": SecServer, "DenyLoginOnOverloadedServer": SecServer, "LoginQueueEnabled": SecServer,
+	"LoginQueueConnectTimeout": SecServer, "server_browser_announced_ip": SecServer,
+	"DisplayUserName": SecServer, "ShowFirstAndLastName": SecServer, "UsernameDisguises": SecServer,
+	"HideDisguisedUserName": SecServer, "AllowNonAsciiUsername": SecServer, "HideAdminsInPlayerList": SecServer,
+
+	// 网络、语音与连接限制
+	"DefaultPort": SecNetwork, "UDPPort": SecNetwork, "SteamPort": SecNetwork, "SteamQueryPort": SecNetwork,
+	"UPnP": SecNetwork, "PingLimit": SecNetwork, "MaxPing": SecNetwork, "MaxPacketsPerSecond": SecNetwork,
+	"ClientCommandFilter": SecNetwork, "ClientActionLogs": SecNetwork, "UltraSpeedDoesnotAffectToAnimals": SecNetwork,
+	"SpeedLimit": SecNetwork,
+	"GlobalChat": SecChat, "ChatStreams": SecChat, "VoiceEnable": SecChat, "VoiceMinDistance": SecChat,
+	"VoiceMaxDistance": SecChat, "Voice3D": SecChat, "ChatMessageCharacterLimit": SecChat,
+	"ChatMessageSlowModeTime": SecChat, "ServerWelcomeMessage": SecChat,
+
+	// 游戏规则与安全机制
+	"SafetySystem": SecRules, "SafetyToggleTimer": SecRules, "SafetyCooldownTimer": SecRules,
+	"SafetyDisconnectDelay": SecRules, "ShowSafety": SecRules, "NoFire": SecRules, "AllowDestructionBySledgehammer": SecRules,
+	"War": SecRules, "WarStartDelay": SecRules, "WarDuration": SecRules, "KnockedDownAllowed": SecRules,
+	"SleepAllowed": SecRules, "SleepNeeded": SecRules, "FastForwardMultiplier": SecRules,
+	"FastForwardModifier": SecRules,
+
+	// 时间、存档与备份
+	"SaveWorldEveryMinutes": SecBackup, "BackupsCount": SecBackup, "BackupsOnStart": SecBackup,
+	"BackupsOnVersionChange": SecBackup, "BackupsPeriod": SecBackup, "HoursPerDay": SecBackup,
+
+	// 物品、尸体与世界交互
+	"ItemNumbersLimitPerContainer": SecWorld, "DropOffWhiteListAfterDeath": SecWorld,
+	"TrashDeleteAll": SecWorld, "BloodSplatLifespanDays": SecWorld, "CarEngineAttractionModifier": SecVehicles,
+	"DisableVehicleTowing": SecVehicles, "DisableTrailerTowing": SecVehicles, "DisableBurntTowing": SecVehicles,
+
+	// 文本过滤与远程管理属于安全分组，固定排在末尾
+	"RCONPort": SecSecurity, "RCONPassword": SecSecurity, "BadWordListFile": SecSecurity,
+	"GoodWordListFile": SecSecurity, "BadWordPolicy": SecSecurity, "BadWordReplacement": SecSecurity,
+	"WebhookAddress": SecSecurity, "Password": SecSecurity, "ServerPassword": SecSecurity,
+}
+
 func inferServerSectionKey(key string) string {
+	if section, ok := serverSectionOverrides[key]; ok {
+		return section
+	}
 	k := strings.ToLower(key)
 
 	if strings.HasPrefix(k, "anticheat") || strings.Contains(k, "hack") || strings.Contains(k, "checksum") {

@@ -154,6 +154,25 @@ Sandbox_DayLength_option2 = "Opt2",
 	}
 }
 
+func TestInferServerSectionKey_DetailedGroups(t *testing.T) {
+	tests := map[string]string{
+		"PublicName":        SecServer,
+		"DefaultPort":       SecNetwork,
+		"VoiceEnable":       SecChat,
+		"SafetySystem":      SecRules,
+		"BackupsOnStart":    SecBackup,
+		"Password":          SecSecurity,
+		"PVP":               SecPlayers,
+		"WorkshopItems":     SecMods,
+		"AntiCheatChecksum": SecAntiCheat,
+	}
+	for key, want := range tests {
+		if got := inferServerSectionKey(key); got != want {
+			t.Errorf("inferServerSectionKey(%q) = %q, want %q", key, got, want)
+		}
+	}
+}
+
 func TestService_GenerateSandboxLua_QuotesStringValues(t *testing.T) {
 	svc := Service{}
 	out := svc.GenerateSandboxLua([]Item{

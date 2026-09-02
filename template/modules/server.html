@@ -105,13 +105,16 @@
                                         <template x-if="item.key === 'PZ_BRANCH' && item.value === '__custom__'">
                                             <input type="text" class="input input-bordered input-sm w-full mt-1" placeholder="输入 Steam 分支名，例如 beta" x-model="customGameBranch" />
                                         </template>
+                                        <template x-if="['Password', 'ServerPassword', 'RCONPassword', 'PZ_ADMIN_PASSWORD'].includes(item.key)">
+                                            <input type="password" class="input input-bordered input-sm w-full mt-1" autocomplete="new-password" :placeholder="item.key === 'PZ_ADMIN_PASSWORD' ? '留空保持当前密码' : ''" x-model="item.value" />
+                                        </template>
                                         <template x-if="!item.options && (item.value === 'true' || item.value === 'false')">
                                             <select class="select select-bordered select-sm w-full mt-1" x-model="item.value" :aria-label="item.label">
                                                 <option value="true" x-text="i18n.option_true || 'true'"></option>
                                                 <option value="false" x-text="i18n.option_false || 'false'"></option>
                                             </select>
                                         </template>
-                                        <template x-if="!item.options && item.value !== 'true' && item.value !== 'false'">
+                                        <template x-if="!item.options && !['Password', 'ServerPassword', 'RCONPassword', 'PZ_ADMIN_PASSWORD'].includes(item.key) && item.value !== 'true' && item.value !== 'false'">
                                             <input type="text" class="input input-bordered input-sm w-full mt-1" x-model="item.value" />
                                         </template>
                                     </div>

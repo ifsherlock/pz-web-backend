@@ -166,10 +166,27 @@ function app() {
                                 branchItem.value = '__custom__';
                             }
                             this.serverConfig = data.items; // 保存原始数组用于提交
+                            const sectionOrder = [
+                                this.i18n.server_settings || '服务端基础',
+                                this.i18n.general_settings || '常规设置',
+                                this.i18n.network_settings || '网络与连接',
+                                this.i18n.map_settings || '地图',
+                                this.i18n.players_pvp || '玩家与PVP',
+                                this.i18n.gameplay_rules || '游戏规则',
+                                this.i18n.chat_voice || '聊天与语音',
+                                this.i18n.world_environment || '世界环境',
+                                this.i18n.vehicle_settings || '车辆设置',
+                                this.i18n.client_limits || '客户端限制',
+                                this.i18n.anticheat || '反作弊',
+                                this.i18n.discord_integration || 'Discord集成',
+                                this.i18n.server_config || '服务端配置',
+                                this.i18n.server_security || '服务端安全'
+                            ];
+                            const sectionRank = new Map(sectionOrder.map((name, index) => [name, index]));
                             this.serverSections = Object.fromEntries(
-                                Object.entries(grouped).filter(([, items]) =>
-                                    items.some(item => item.key !== 'Mods' && item.key !== 'WorkshopItems')
-                                )
+                                Object.entries(grouped)
+                                    .filter(([, items]) => items.some(item => item.key !== 'Mods' && item.key !== 'WorkshopItems'))
+                                    .sort(([left], [right]) => (sectionRank.get(left) ?? 999) - (sectionRank.get(right) ?? 999))
                             );
                         } else {
                             this.sandboxConfig = data.items;

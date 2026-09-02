@@ -14,6 +14,8 @@ import (
 // 而是保存到 panel_settings.json，由 start-pz.sh 读取。
 const MemoryLimitKey = "PZ_MEMORY_LIMIT"
 const GameBranchKey = "PZ_BRANCH"
+const AdminUsernameKey = "PZ_ADMIN_USERNAME"
+const AdminPasswordKey = "PZ_ADMIN_PASSWORD"
 
 func (a App) handleGetServerConfig(c *gin.Context) {
 	lang := strings.ToUpper(c.DefaultQuery("lang", "CN"))
@@ -23,6 +25,19 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	// 将密码相关配置集中到末尾的安全分组，便于在同一处维护入服与管理员凭据。
+	securityKeys := map[string]bool{"Password": true, "ServerPassword": true, "RCONPassword": true}
+	normalItems := make([]config.Item, 0, len(items))
+	securityItems := make([]config.Item, 0, 3)
+	for _, item := range items {
+		if securityKeys[item.Key] {
+			item.Section = "服务端安全"
+			securityItems = append(securityItems, item)
+			continue
+		}
+		normalItems = append(normalItems, item)
+	}
+	items = append(normalItems, securityItems...)
 	// 追加内存设置虚拟项：不写入 servertest.ini，仅面板展示，
 	// 保存时由 handleSaveConfig 抽离并写入 panel_settings.json。
 	// Section 直接用中文，确保前端分组标题显示"服务端配置"。
@@ -44,6 +59,13 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 			Section: "服务端配置",
 			Options: []config.Option{{Value: "public", Label: "稳定版 42.20.4 (public，自动更新)"}, {Value: "42.19", Label: "42.19.2 (42.19，自动更新)"}, {Value: "legacy41", Label: "41.78.21 (legacy41，自动更新)"}, {Value: "__custom__", Label: "自定义 Steam 分支名"}},
 		})
+		adminUsername, _ := normalizeAdminUsername(settings.AdminUsername)
+		adminPassword := ""
+		if settings.AdminPassword != "" {
+			adminPassword = "********"
+		}
+		items = append(items, config.Item{Key: AdminUsernameKey, Value: adminUsername, Label: "管理员账户", Tooltip: "游戏内管理员账户名；保存并重启后生效。", Section: "服务端安全"})
+		items = append(items, config.Item{Key: AdminPasswordKey, Value: adminPassword, Label: "管理员密码", Tooltip: "游戏内管理员密码；留空表示保持当前密码，保存并重启后生效。", Section: "服务端安全"})
 	}
 	filename := fmt.Sprintf("%s.ini", a.ConfigApp.ServerName)
 	c.JSON(http.StatusOK, gin.H{"filename": filename, "lang": lang, "items": items})
@@ -96,6 +118,25 @@ func (a App) handleSaveConfig(c *gin.Context) {
 					return
 				}
 				settings.GameBranch = branch
+				continue
+			}
+			if item.Key == AdminUsernameKey {
+				username, err := normalizeAdminUsername(item.Value)
+				if err != nil {
+					c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+					return
+				}
+				settings.AdminUsername = username
+				continue
+			}
+			if item.Key == AdminPasswordKey {
+				if item.Value != "" && item.Value != "********" {
+					if strings.ContainsAny(item.Value, "\r\n") || len(item.Value) < 4 || len(item.Value) > 128 {
+						c.JSON(http.StatusBadRequest, gin.H{"error": "admin password must be 4-128 characters without line breaks"})
+						return
+					}
+					settings.AdminPassword = item.Value
+				}
 				continue
 			}
 			filtered = append(filtered, item)

@@ -15,15 +15,18 @@ import (
 // 保存在挂载卷(容器内 /opt/pz-web-backend/panel_settings.json)，
 // 这样不重建镜像也能修改配置，start-pz.sh 也可读取内存设置。
 type PanelSettings struct {
-	SteamAPIKey string `json:"steam_api_key"`
-	MemoryLimit string `json:"memory_limit"` // 例: 3g
-	GameBranch  string `json:"game_branch"`  // Steam 分支名，例如 public / 42.19
+	SteamAPIKey   string `json:"steam_api_key"`
+	MemoryLimit   string `json:"memory_limit"` // 例: 3g
+	GameBranch    string `json:"game_branch"`  // Steam 分支名，例如 public / 42.19
+	AdminUsername string `json:"admin_username"`
+	AdminPassword string `json:"admin_password"`
 }
 
 const panelSettingsFilename = "panel_settings.json"
 
 var memoryLimitPattern = regexp.MustCompile(`^[1-9][0-9]*[mMgG]$`)
 var gameBranchPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$`)
+var adminUsernamePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,31}$`)
 
 func normalizeMemoryLimit(raw string) (string, error) {
 	value := strings.TrimSpace(raw)
@@ -43,6 +46,17 @@ func normalizeGameBranch(raw string) (string, error) {
 	}
 	if !gameBranchPattern.MatchString(value) {
 		return "", fmt.Errorf("game branch must contain only letters, numbers, dots, underscores, or hyphens")
+	}
+	return value, nil
+}
+
+func normalizeAdminUsername(raw string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "admin", nil
+	}
+	if !adminUsernamePattern.MatchString(value) {
+		return "", fmt.Errorf("admin username must contain only letters, numbers, dots, underscores, or hyphens")
 	}
 	return value, nil
 }
