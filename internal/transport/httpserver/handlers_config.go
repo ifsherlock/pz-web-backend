@@ -39,7 +39,7 @@ func (a App) handleGetServerConfig(c *gin.Context) {
 	}
 	// 追加内存设置虚拟项：不写入 servertest.ini，仅面板展示，
 	// 保存时由 handleSaveConfig 抽离并写入 panel_settings.json。
-	// Section 直接用中文，确保前端分组标题显示"服务端配置"。
+	// 虚拟项使用与当前语言匹配的服务端配置分组标题。
 	if a.Settings != nil {
 		settings := a.Settings.Load()
 		branch, _ := normalizeGameBranch(settings.GameBranch)
