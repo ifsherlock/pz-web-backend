@@ -298,7 +298,7 @@ var serverSectionOverrides = map[string]string{
 
 	// 时间、存档与备份
 	"SaveWorldEveryMinutes": SecBackup, "BackupsCount": SecBackup, "BackupsOnStart": SecBackup,
-	"BackupsOnVersionChange": SecBackup, "BackupsPeriod": SecBackup, "HoursPerDay": SecBackup,
+	"BackupsOnVersionChange": SecBackup, "BackupsPeriod": SecBackup, "HoursPerDay": SecTime,
 
 	// 物品、尸体与世界交互
 	"ItemNumbersLimitPerContainer": SecWorld, "DropOffWhiteListAfterDeath": SecWorld,
