@@ -2,8 +2,12 @@ package httpserver
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -13,11 +17,12 @@ import (
 
 // systemStats 容器内 CPU / 内存使用情况(读取 /proc)。
 type systemStats struct {
-	CPUPercent float64 `json:"cpu_percent"`
-	MemTotalMB int64   `json:"mem_total_mb"`
-	MemUsedMB  int64   `json:"mem_used_mb"`
-	MemPercent float64 `json:"mem_percent"`
-	UptimeSec  int64   `json:"uptime_sec"`
+	CPUPercent  float64 `json:"cpu_percent"`
+	MemTotalMB  int64   `json:"mem_total_mb"`
+	MemUsedMB   int64   `json:"mem_used_mb"`
+	MemPercent  float64 `json:"mem_percent"`
+	UptimeSec   int64   `json:"uptime_sec"`
+	GameVersion string  `json:"game_version"`
 }
 
 // handleSystemStats 返回容器内 CPU 与内存占用，供前端仪表盘展示。
@@ -27,7 +32,70 @@ func (a App) handleSystemStats(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	stats.GameVersion = readGameVersion(a.BaseDataDir, a.LogPath)
 	c.JSON(http.StatusOK, stats)
+}
+
+var gameVersionPattern = regexp.MustCompile(`version=([0-9]+(?:\.[0-9]+)+)`)
+
+// readGameVersion 从最新服务端日志读取实际运行版本，而不是读取目标分支配置。
+func readGameVersion(baseDataDir, logPath string) string {
+	paths := make([]string, 0, 16)
+	if logPath != "" {
+		paths = append(paths, logPath)
+	}
+	logsDir := filepath.Join(baseDataDir, "Logs")
+	_ = filepath.WalkDir(logsDir, func(path string, entry os.DirEntry, err error) error {
+		if err == nil && !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".txt") {
+			paths = append(paths, path)
+		}
+		return nil
+	})
+
+	// 优先读取最近修改的日志，避免旧版本日志覆盖当前版本。
+	type candidate struct {
+		path string
+		mod  int64
+	}
+	candidates := make([]candidate, 0, len(paths))
+	seen := map[string]bool{}
+	for _, path := range paths {
+		if seen[path] {
+			continue
+		}
+		seen[path] = true
+		info, err := os.Stat(path)
+		if err == nil {
+			candidates = append(candidates, candidate{path: path, mod: info.ModTime().UnixNano()})
+		}
+	}
+	sort.Slice(candidates, func(i, j int) bool { return candidates[i].mod > candidates[j].mod })
+	for _, item := range candidates {
+		if version := versionFromLogFile(item.path); version != "" {
+			return version
+		}
+	}
+	return "unknown"
+}
+
+func versionFromLogFile(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	if info, err := f.Stat(); err == nil && info.Size() > 1024*1024 {
+		_, _ = f.Seek(-1024*1024, io.SeekEnd)
+	}
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return ""
+	}
+	matches := gameVersionPattern.FindAllSubmatch(data, -1)
+	if len(matches) == 0 {
+		return ""
+	}
+	return string(matches[len(matches)-1][1])
 }
 
 func readSystemStats() (systemStats, error) {

@@ -12,7 +12,7 @@ function app() {
                 sandboxSections: {},
                 logs: '...',
                 status: { pid: 0, uptime: '0s' },
-                stats: { cpu_percent: 0, mem_used_mb: 0, mem_total_mb: 0, mem_percent: 0, uptime_sec: 0 },
+                stats: { cpu_percent: 0, mem_used_mb: 0, mem_total_mb: 0, mem_percent: 0, uptime_sec: 0, game_version: 'unknown' },
                 statsTimer: null,
                 toast: { show: false, message: '', type: 'success' },
                 configTooltip: { show: false, key: '', text: '', left: 12, top: 12, maxWidth: 420 },
